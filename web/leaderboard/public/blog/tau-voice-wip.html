@@ -548,15 +548,19 @@
       <!-- ====== Why voice ====== -->
       <h2>Why voice agents need end-to-end evaluation</h2>
 
-      <p>Voice is rapidly becoming a primary interface for agentic systems. Audio-native models &mdash; systems that ingest and produce speech end-to-end, without going through an intermediate transcript &mdash; are now generally available from <strong>OpenAI</strong>, <strong>Google</strong>, and <strong>xAI</strong>. The pitch is compelling: a single model that listens, speaks, interrupts, backchannels, and decides when to take the floor. In customer service, where voice remains the channel of choice for nuanced or urgent issues, the appeal is obvious.</p>
+      <p>Voice is rapidly becoming a primary interface for agentic systems.</p>
 
-      <p>But the evaluation landscape has not caught up. Existing benchmarks tend to measure either <strong>task completion</strong> (can the agent call the right tool, follow the right policy, change the database the right way?) or <strong>conversational dynamics</strong> (does it interrupt politely, yield gracefully, recognise a backchannel?), but rarely both, and rarely under realistic acoustic conditions. The risk is that we ship voice agents that hold a charming conversation while quietly failing the underlying task &mdash; or, conversely, agents that handle the task but feel robotic and unnatural to talk to.</p>
+      <p>And yet today's evaluation landscape splits voice agents in half. <strong>Audio benchmarks</strong> measure conversational dynamics &mdash; does the model interrupt politely, yield gracefully, recognise a backchannel, sound natural under noise? &mdash; but rarely check whether the agent actually solved the caller's problem. <strong>Task-completion benchmarks</strong>, conversely, are well established in the <em>text</em> domain (τ-bench among them): they rigorously verify that the agent called the right tool, followed the right policy, and changed the database the right way &mdash; but they assume a clean text channel and never expose the agent to real audio.</p>
+
+      <p>The risk is that we ship voice agents that hold a charming conversation while quietly failing the underlying task &mdash; or, conversely, agents that nail the task in writing but fall apart the moment a real caller starts talking over them.</p>
 
       <div class="story-callout">
         A customer calls to make changes to their account. Background noise from a busy street and an unfamiliar accent push the speech recogniser off, and authentication fails. <strong>Does the agent ask them to spell their name? If they spell it, does the agent transcribe it correctly? If so, does it actually fix the failed authentication call &mdash; or does it lose track of the corrections spread across three turns?</strong>
       </div>
 
-      <p>None of the standard benchmarks would catch a failure like this, because each step looks fine in isolation. And the people most likely to be affected &mdash; speakers with non-standard accents, callers from noisy environments, users on degraded connections &mdash; are the ones who need voice agents to be reliable in the first place. <strong>Robustness to realistic audio conditions is an accessibility issue.</strong></p>
+      <p>None of the standard benchmarks would catch a failure like this, because each step looks fine in isolation. Measuring both dimensions together &mdash; task completion <em>and</em> conversational dynamics, on the same call, under realistic audio &mdash; is what lets us see these integrated failures, quantify how much of an agent's text capability survives the move to voice, and surface regressions for the people most affected: speakers with non-standard accents, callers from noisy environments, users on degraded connections. <strong>Robustness to realistic audio conditions is an accessibility issue.</strong></p>
+
+      <p>This is also a particularly timely thing to measure. <strong>Audio-native models</strong> &mdash; systems that ingest and produce speech end-to-end, without an intermediate transcript &mdash; are the next frontier of agentic AI: generally available from <strong>OpenAI</strong>, <strong>Google</strong>, and <strong>xAI</strong>, and improving fast. A benchmark sensitive to both task and conversation gives us a way to track exactly how quickly that frontier is moving.</p>
 
       <!-- ====== Introducing τ-voice ====== -->
       <h2>Introducing τ-voice</h2>
