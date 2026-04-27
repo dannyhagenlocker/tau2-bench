@@ -225,6 +225,20 @@
     }
     .hc-tag-paper { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
     .hc-tag-now { background: #dcfce7; color: #065f46; border: 1px solid #86efac; }
+    .hc-tag-wip { background: #fef3c7; color: #92400e; border: 1px solid #fbbf24; }
+
+    /* Work-in-progress note (yellow callout under a WIP-tagged demo block) */
+    .wip-note {
+      background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+      padding: 10px 14px; margin: 0 24px 20px;
+      font-size: 12.5px; color: #92400e; line-height: 1.5;
+    }
+    .wip-note strong { color: #78350f; }
+    .wip-note-label {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: #92400e; margin-right: 6px;
+    }
     .hc-bar-track {
       position: relative; height: 28px; background: #f1f5f9; border-radius: 6px; overflow: hidden;
     }
@@ -584,7 +598,8 @@
       <p>Each tick, the simulator does four things in sequence: it generates the next caller utterance as text, synthesises it through a voice persona, mixes the synthesised speech with environmental audio (background noise, vocal tics, non-directed speech), and applies channel degradation (G.711 µ-law compression at 8&nbsp;kHz, dynamic muffling, frame drops via a Gilbert-Elliott model). A separate LLM-driven turn-taking policy, evaluated every two seconds, decides whether to interrupt, yield, or backchannel.</p>
 
       <div class="demo-block" id="pipeline-figure">
-        <div class="demo-label"><span class="demo-label-icon">🎙</span> Voice User Simulator Pipeline</div>
+        <div class="demo-label"><span class="demo-label-icon">🎙</span> Voice User Simulator Pipeline <span class="hc-tag hc-tag-wip" style="margin-left:8px;">WIP</span></div>
+        <div class="wip-note"><span class="wip-note-label">Work in progress</span>This diagram is a sketch of the simulator stages, not a precise spec &mdash; e.g. the turn-taking policy lane, persona/channel ordering, and the exact set of audio effects need a pass for accuracy. Updated version coming.</div>
         <div class="pipeline-wrap">
           <svg class="pipeline-svg" viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pipeline diagram">
             <!-- Boxes -->
@@ -655,7 +670,8 @@
       <p>Because τ-voice and τ-bench share tasks, tools, and evaluator, the comparison is unusually clean: voice vs.&nbsp;text, on the same problem. Below, we plot four points on a single 0&ndash;100% pass@1 axis, all averaged across retail, airline, and telecom: the text reasoning ceiling, a strong non-reasoning text baseline, the best voice agent at the time of the paper (Feb&nbsp;2026), and the best voice agent on the leaderboard <em>this week</em>.</p>
 
       <div class="demo-block" id="headline-chart">
-        <div class="demo-label"><span class="demo-label-icon">📈</span> Pass@1 across retail + airline + telecom &nbsp;·&nbsp; text vs voice, then vs now</div>
+        <div class="demo-label"><span class="demo-label-icon">📈</span> Pass@1 across retail + airline + telecom &nbsp;·&nbsp; text vs voice, then vs now <span class="hc-tag hc-tag-wip" style="margin-left:8px;">WIP</span></div>
+        <div class="wip-note"><span class="wip-note-label">Work in progress</span>This 4-bar comparison mixes paper-era and current-leaderboard numbers in a way that's hard to read at a glance. Plan: merge it with the &ldquo;Voice models are improving fast&rdquo; section below into a single timeline that shows the text ceiling/baseline as horizontal reference lines and the voice frontier as a continuous progression &mdash; one chart, one story, no &ldquo;then vs. now&rdquo; ambiguity.</div>
         <div class="headline-chart">
           <div class="hc-bar-row">
             <div>
