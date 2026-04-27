@@ -296,35 +296,6 @@
     .ab-cell-mid { background: #f8fafc; color: #4a5568; }
     .ab-delta { font-size: 11px; color: #94a3b8; margin-left: 3px; }
 
-    /* Voice quality 4-metric panel */
-    .vq-panel {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
-      padding: 20px 24px;
-    }
-    .vq-card {
-      background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
-      padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
-    }
-    .vq-card-title {
-      font-size: 11px; font-weight: 700; color: #a0aec0;
-      text-transform: uppercase; letter-spacing: 0.06em;
-    }
-    .vq-card-direction { font-size: 10px; color: #cbd5e0; font-weight: 600; }
-    .vq-row {
-      display: grid; grid-template-columns: 60px 1fr 56px;
-      align-items: center; gap: 8px; font-size: 12px;
-    }
-    .vq-row-name { font-weight: 600; color: #4a5568; }
-    .vq-row-bar {
-      position: relative; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden;
-    }
-    .vq-row-bar > span {
-      position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px;
-    }
-    .vq-row-val {
-      font-variant-numeric: tabular-nums; text-align: right; font-weight: 700; color: #1a202c;
-    }
-
     /* Error analysis stacked bars */
     .ea-cohort {
       padding: 16px 24px; border-bottom: 1px solid #edf2f7;
@@ -482,7 +453,6 @@
       .hc-axis { grid-column: auto; }
 
       .pp-row { grid-template-columns: 70px 1fr 90px; }
-      .vq-panel { grid-template-columns: repeat(2, 1fr); }
       .fm-grid { grid-template-columns: 1fr; }
       .ea-row { grid-template-columns: 56px 1fr 56px; }
 
@@ -835,106 +805,6 @@
           <strong>Accents are the most damaging factor on average (−10 pp), but the effect is highly provider-specific.</strong> xAI loses 18 pp and 38% of its clean capability to accents alone, while Google is essentially unaffected (−1 pp). Because we induce accents through TTS personas, treat the absolute numbers as indicative &mdash; but the per-provider variance is large enough to suggest a real accessibility concern. Turn-taking is Google's worst single factor; for OpenAI, both turn-taking and accents bite hard.
         </div>
         <div class="source-line"><strong>Source:</strong> τ-voice paper, Table 4 (Retail, ablations).</div>
-      </div>
-
-      <!-- ====== Conversation quality ====== -->
-      <h3>No provider masters both task completion <em>and</em> turn-taking</h3>
-
-      <p>Beyond pass@1, we measure four dimensions of conversational quality under the realistic condition: <strong>latency</strong> (how quickly the agent reacts), <strong>responsiveness</strong> (does it act when it needs to?), <strong>interrupt rate</strong> (how often it cuts the user off), and <strong>selectivity</strong> (does it correctly ignore backchannels, vocal tics, and off-mic chatter?). Each provider tops the chart on one or two metrics and trails badly on at least one other.</p>
-
-      <div class="demo-block" id="vq-panel">
-        <div class="demo-label"><span class="demo-label-icon">🎚</span> Voice interaction quality &nbsp;·&nbsp; Realistic, all domains <span class="hc-tag hc-tag-paper" style="margin-left:8px;">paper · Feb 2026</span></div>
-        <div class="vq-panel">
-
-          <div class="vq-card">
-            <div>
-              <div class="vq-card-title">Latency <span class="vq-card-direction">(lower is better)</span></div>
-            </div>
-            <div class="vq-row">
-              <div class="vq-row-name">Google</div>
-              <div class="vq-row-bar"><span style="width: 76%; background: #60a5fa;"></span></div>
-              <div class="vq-row-val">1.14s</div>
-            </div>
-            <div class="vq-row">
-              <div class="vq-row-name">OpenAI</div>
-              <div class="vq-row-bar"><span style="width: 60%; background: #34d399;"></span></div>
-              <div class="vq-row-val">0.90s</div>
-            </div>
-            <div class="vq-row">
-              <div class="vq-row-name">xAI</div>
-              <div class="vq-row-bar"><span style="width: 77%; background: #fbbf24;"></span></div>
-              <div class="vq-row-val">1.15s</div>
-            </div>
-          </div>
-
-          <div class="vq-card">
-            <div>
-              <div class="vq-card-title">Responsiveness <span class="vq-card-direction">(higher is better)</span></div>
-            </div>
-            <div class="vq-row">
-              <div class="vq-row-name">Google</div>
-              <div class="vq-row-bar"><span style="width: 69%; background: #60a5fa;"></span></div>
-              <div class="vq-row-val">69%</div>
-            </div>
-            <div class="vq-row">
-              <div class="vq-row-name">OpenAI</div>
-              <div class="vq-row-bar"><span style="width: 100%; background: #34d399;"></span></div>
-              <div class="vq-row-val">100%</div>
-            </div>
-            <div class="vq-row">
-              <div class="vq-row-name">xAI</div>
-              <div class="vq-row-bar"><span style="width: 83%; background: #fbbf24;"></span></div>
-              <div class="vq-row-val">83%</div>
-            </div>
-          </div>
-
-          <div class="vq-card">
-            <div>
-              <div class="vq-card-title">Interrupt rate <span class="vq-card-direction">(lower is better)</span></div>
-            </div>
-            <div class="vq-row">
-              <div class="vq-row-name">Google</div>
-              <div class="vq-row-bar"><span style="width: 21%; background: #60a5fa;"></span></div>
-              <div class="vq-row-val">21%</div>
-            </div>
-            <div class="vq-row">
-              <div class="vq-row-name">OpenAI</div>
-              <div class="vq-row-bar"><span style="width: 14%; background: #34d399;"></span></div>
-              <div class="vq-row-val">14%</div>
-            </div>
-            <div class="vq-row">
-              <div class="vq-row-name">xAI</div>
-              <div class="vq-row-bar"><span style="width: 84%; background: #fbbf24;"></span></div>
-              <div class="vq-row-val">84%</div>
-            </div>
-          </div>
-
-          <div class="vq-card">
-            <div>
-              <div class="vq-card-title">Selectivity <span class="vq-card-direction">(higher is better)</span></div>
-            </div>
-            <div class="vq-row">
-              <div class="vq-row-name">Google</div>
-              <div class="vq-row-bar"><span style="width: 54%; background: #60a5fa;"></span></div>
-              <div class="vq-row-val">54%</div>
-            </div>
-            <div class="vq-row">
-              <div class="vq-row-name">OpenAI</div>
-              <div class="vq-row-bar"><span style="width: 6%; background: #34d399;"></span></div>
-              <div class="vq-row-val">6%</div>
-            </div>
-            <div class="vq-row">
-              <div class="vq-row-name">xAI</div>
-              <div class="vq-row-bar"><span style="width: 57%; background: #fbbf24;"></span></div>
-              <div class="vq-row-val">57%</div>
-            </div>
-          </div>
-
-        </div>
-        <div class="chart-note">
-          <strong>OpenAI</strong> is the snappiest by some margin (0.90&nbsp;s) and effectively never goes silent (100% responsiveness), but it is also the most willing to chime in &mdash; selectivity 6% means it responds to almost every backchannel, cough, and "hold on a sec." <strong>xAI</strong> shows the opposite tradeoff: high selectivity, but it interrupts the user nearly once per turn. <strong>Google</strong> is the politest interrupter but goes unresponsive on roughly a third of user turns. There is no Pareto-dominant provider on conversational quality today.
-        </div>
-        <div class="source-line"><strong>Source:</strong> τ-voice paper, Table 3.</div>
       </div>
 
       <!-- ====== Failure analysis ====== -->
