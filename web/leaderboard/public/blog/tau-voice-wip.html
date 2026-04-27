@@ -744,69 +744,6 @@
         </div>
       </div>
 
-      <!-- ====== Ablations ====== -->
-      <h3>What hurts most: noise, accents, or turn-taking?</h3>
-
-      <p>To pin down which part of "realistic" matters, we ran ablations on the retail domain &mdash; adding background noise, diverse accents, and turn-taking dynamics one factor at a time, on top of an otherwise clean condition.</p>
-
-      <div class="demo-block" id="ablation-chart">
-        <div class="demo-label"><span class="demo-label-icon">🧪</span> Ablation &nbsp;·&nbsp; impact of each factor on Retail pass@1 <span class="hc-tag hc-tag-paper" style="margin-left:8px;">paper · Feb 2026</span></div>
-        <div class="ab-table-wrap">
-          <table class="ab-table">
-            <thead>
-              <tr>
-                <th>Condition</th>
-                <th>Google</th>
-                <th>OpenAI</th>
-                <th>xAI</th>
-                <th>Average</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><span class="ab-cond-pill ab-clean">Clean</span></td>
-                <td><span class="ab-cell-val ab-cell-mid">45</span></td>
-                <td><span class="ab-cell-val ab-cell-best">71</span></td>
-                <td><span class="ab-cell-val ab-cell-mid">48</span></td>
-                <td><span class="ab-cell-val ab-cell-mid">55</span></td>
-              </tr>
-              <tr>
-                <td><span class="ab-cond-pill ab-noise">+ Noise</span></td>
-                <td><span class="ab-cell-val ab-cell-mid">40</span><span class="ab-delta">−4</span></td>
-                <td><span class="ab-cell-val ab-cell-best">67</span><span class="ab-delta">−4</span></td>
-                <td><span class="ab-cell-val ab-cell-mid">46</span><span class="ab-delta">−2</span></td>
-                <td><span class="ab-cell-val ab-cell-mid">51</span><span class="ab-delta">−4</span></td>
-              </tr>
-              <tr>
-                <td><span class="ab-cond-pill ab-accent">+ Accents</span></td>
-                <td><span class="ab-cell-val ab-cell-mid">44</span><span class="ab-delta">−1</span></td>
-                <td><span class="ab-cell-val ab-cell-best">60</span><span class="ab-delta">−11</span></td>
-                <td><span class="ab-cell-val ab-cell-bad">30</span><span class="ab-delta">−18</span></td>
-                <td><span class="ab-cell-val ab-cell-mid">44</span><span class="ab-delta">−10</span></td>
-              </tr>
-              <tr>
-                <td><span class="ab-cond-pill ab-turn">+ Turn-taking</span></td>
-                <td><span class="ab-cell-val ab-cell-bad">33</span><span class="ab-delta">−11</span></td>
-                <td><span class="ab-cell-val ab-cell-best">57</span><span class="ab-delta">−14</span></td>
-                <td><span class="ab-cell-val ab-cell-mid">52</span><span class="ab-delta">+4</span></td>
-                <td><span class="ab-cell-val ab-cell-mid">47</span><span class="ab-delta">−7</span></td>
-              </tr>
-              <tr>
-                <td><span class="ab-cond-pill ab-real">Realistic (all)</span></td>
-                <td><span class="ab-cell-val ab-cell-bad">30</span><span class="ab-delta">−15</span></td>
-                <td><span class="ab-cell-val ab-cell-best">45</span><span class="ab-delta">−26</span></td>
-                <td><span class="ab-cell-val ab-cell-mid">39</span><span class="ab-delta">−10</span></td>
-                <td><span class="ab-cell-val ab-cell-mid">38</span><span class="ab-delta">−17</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="chart-note">
-          <strong>Accents are the most damaging factor on average (−10 pp), but the effect is highly provider-specific.</strong> xAI loses 18 pp and 38% of its clean capability to accents alone, while Google is essentially unaffected (−1 pp). Because we induce accents through TTS personas, treat the absolute numbers as indicative &mdash; but the per-provider variance is large enough to suggest a real accessibility concern. Turn-taking is Google's worst single factor; for OpenAI, both turn-taking and accents bite hard.
-        </div>
-        <div class="source-line"><strong>Source:</strong> τ-voice paper, Table 4 (Retail, ablations).</div>
-      </div>
-
       <!-- ====== Failure analysis ====== -->
       <h2>What's actually going wrong</h2>
 
@@ -921,6 +858,68 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <h3>How much does each ingredient of "realistic" compound these?</h3>
+
+      <p>To quantify how much each part of "realistic" contributes to the failure modes above, we ran ablations on the retail domain &mdash; adding background noise, diverse accents, and turn-taking dynamics one factor at a time, on top of an otherwise clean condition.</p>
+
+      <div class="demo-block" id="ablation-chart">
+        <div class="demo-label"><span class="demo-label-icon">🧪</span> Ablation &nbsp;·&nbsp; impact of each factor on Retail pass@1 <span class="hc-tag hc-tag-paper" style="margin-left:8px;">paper · Feb 2026</span></div>
+        <div class="ab-table-wrap">
+          <table class="ab-table">
+            <thead>
+              <tr>
+                <th>Condition</th>
+                <th>Google</th>
+                <th>OpenAI</th>
+                <th>xAI</th>
+                <th>Average</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="ab-cond-pill ab-clean">Clean</span></td>
+                <td><span class="ab-cell-val ab-cell-mid">45</span></td>
+                <td><span class="ab-cell-val ab-cell-best">71</span></td>
+                <td><span class="ab-cell-val ab-cell-mid">48</span></td>
+                <td><span class="ab-cell-val ab-cell-mid">55</span></td>
+              </tr>
+              <tr>
+                <td><span class="ab-cond-pill ab-noise">+ Noise</span></td>
+                <td><span class="ab-cell-val ab-cell-mid">40</span><span class="ab-delta">−4</span></td>
+                <td><span class="ab-cell-val ab-cell-best">67</span><span class="ab-delta">−4</span></td>
+                <td><span class="ab-cell-val ab-cell-mid">46</span><span class="ab-delta">−2</span></td>
+                <td><span class="ab-cell-val ab-cell-mid">51</span><span class="ab-delta">−4</span></td>
+              </tr>
+              <tr>
+                <td><span class="ab-cond-pill ab-accent">+ Accents</span></td>
+                <td><span class="ab-cell-val ab-cell-mid">44</span><span class="ab-delta">−1</span></td>
+                <td><span class="ab-cell-val ab-cell-best">60</span><span class="ab-delta">−11</span></td>
+                <td><span class="ab-cell-val ab-cell-bad">30</span><span class="ab-delta">−18</span></td>
+                <td><span class="ab-cell-val ab-cell-mid">44</span><span class="ab-delta">−10</span></td>
+              </tr>
+              <tr>
+                <td><span class="ab-cond-pill ab-turn">+ Turn-taking</span></td>
+                <td><span class="ab-cell-val ab-cell-bad">33</span><span class="ab-delta">−11</span></td>
+                <td><span class="ab-cell-val ab-cell-best">57</span><span class="ab-delta">−14</span></td>
+                <td><span class="ab-cell-val ab-cell-mid">52</span><span class="ab-delta">+4</span></td>
+                <td><span class="ab-cell-val ab-cell-mid">47</span><span class="ab-delta">−7</span></td>
+              </tr>
+              <tr>
+                <td><span class="ab-cond-pill ab-real">Realistic (all)</span></td>
+                <td><span class="ab-cell-val ab-cell-bad">30</span><span class="ab-delta">−15</span></td>
+                <td><span class="ab-cell-val ab-cell-best">45</span><span class="ab-delta">−26</span></td>
+                <td><span class="ab-cell-val ab-cell-mid">39</span><span class="ab-delta">−10</span></td>
+                <td><span class="ab-cell-val ab-cell-mid">38</span><span class="ab-delta">−17</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="chart-note">
+          <strong>Accents are the most damaging factor on average (−10 pp), with strong per-provider variance</strong> &mdash; xAI loses 18 pp (38% of its clean capability) to accents alone, while Google is essentially unaffected (−1 pp). The two effects map cleanly onto the failure modes above: accent perturbations drive the <em>authentication-transcription</em> failures (the agent mishears spelled names letter by letter), and turn-taking dynamics push agents into the <em>goes-silent</em> mode and into interruption-driven reasoning errors. Because we induce accents through TTS personas, treat the absolute numbers as indicative &mdash; but the per-provider variance is large enough to suggest a real accessibility concern.
+        </div>
+        <div class="source-line"><strong>Source:</strong> τ-voice paper, Table 4 (Retail, ablations).</div>
       </div>
 
       <!-- ====== Listen for yourself CTA ====== -->
