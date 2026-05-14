@@ -228,6 +228,7 @@ The actionable list for paper edits.
 - Reference correctness check (C5): 9 cited entries converted from arXiv to canonical venue citations; 3 uncited entries fixed for hygiene; all other entries spot-checked clean.
 - Simulator-realism human study (B3): §6.1 paragraph + new `app:simulator-realism` appendix subsection with per-dimension table.
 - Audited audio-native model survey (C7): new `app:audio-native-audit` appendix subsection with 11-row capability matrix (`tab:audio-native-audit`), one-sentence cross-ref from §4.2. Audit dated March 2026; 8 new bib entries added (`c9edeff`); landing commit `830f164`.
+- Figure 1 regeneration (C2.1 follow-up): regenerated `results/pass_1_headline_simple.pdf` with canonical model aliases (`gemini-live-2.5`, `gpt-realtime-1.5`, `grok-voice`) replacing the human-readable provider names, matching Table~\ref{tab:models} and the paper prose. Source fix landed in `src/experiments/tau_voice/exp/plot_style.py` (`SHORT_MODEL_NAMES`); regenerated from `data/exp/final_voice_results_trial1_analysis` (the same single-trial CSV that backs the main results tables, so headline numbers 31/26, 49/35, 51/38 are unchanged). Removed the inline `\todo` from `intro.tex`. Landing commit `21e31ece`.
 
 **Remaining, ordered by urgency × effort:**
 
