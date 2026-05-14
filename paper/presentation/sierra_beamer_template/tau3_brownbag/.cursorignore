@@ -1,0 +1,37 @@
+# Sierra Beamer Template - Cursor Ignore
+# Files that Cursor AI should not index or modify
+
+# LaTeX auxiliary files
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+*.vrb
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg
+
+# Build outputs
+*.pdf
+
+# Fonts (binary files)
+fonts/*.otf
+fonts/*.ttf
+
+# Images (binary files)  
+assets/*.png
+assets/*.jpg
+assets/*.jpeg
+assets/*.svg
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Theme files - generally don't modify these
+# beamer*.sty
+

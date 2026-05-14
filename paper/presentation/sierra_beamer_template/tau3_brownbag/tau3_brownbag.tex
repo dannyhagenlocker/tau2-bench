@@ -1,0 +1,596 @@
+%% =============================================================================
+%% tau3_brownbag - Sierra Presentation
+%% =============================================================================
+%% Created with Sierra Beamer Template
+%% Build with: xelatex tau3_brownbag.tex
+%% =============================================================================
+
+\documentclass[aspectratio=169]{beamer}
+
+%% Load Sierra theme
+\usetheme[notitlebackground]{Sierra}
+
+%% Additional packages
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage{amsmath}
+
+%% Shortcuts
+\newcommand{\tauvoice}{$\tau$-Voice}
+\newcommand{\taubench}{$\tau$-bench}
+\newcommand{\tautwobench}{$\tau^2$-bench}
+
+%% =============================================================================
+%% Presentation Metadata
+%% =============================================================================
+
+\title{$\tau$-Voice}
+\subtitle{Benchmarking Full-Duplex Voice Agents\\on Real-World Domains}
+\author{Soham Ray, Keshav Dhandhania, Victor Barres, Karthik Narasimhan}
+\institute{Sierra AI \quad$\cdot$\quad Princeton University}
+\date{}
+
+\newcommand{\sierralogo}{%
+  \includegraphics[height=1.2cm]{assets/sierra-logo-white.png}%
+}
+
+%% =============================================================================
+%% Document
+%% =============================================================================
+
+\begin{document}
+
+%% ---------------------------------------------------------------------------
+%% SLIDE 1: tau3 Title
+%% ---------------------------------------------------------------------------
+
+{
+\usebackgroundtemplate{%
+  \includegraphics[width=\paperwidth,height=\paperheight]{assets/sierra-forest-bg.png}%
+}
+\begin{frame}[plain]
+  \centering
+  \vfill
+  {\fontsize{40}{48}\selectfont\interlight\textcolor{SierraWhite}{$\tau^3$-Bench}}
+
+  \vspace{0.8em}
+  {\fontsize{18}{22}\selectfont\interregular\textcolor{SierraWhite}{Advancing Agent Evaluation\\to Knowledge and Voice}}
+
+  \vspace{2em}
+  \includegraphics[height=1.2cm]{assets/sierra-logo-white.png}
+  \vfill
+\end{frame}
+}
+
+%% ---------------------------------------------------------------------------
+%% SLIDE 2: tau3-Bench Overview
+%% ---------------------------------------------------------------------------
+
+\begin{frame}{$\tau^3$-Bench: Two New Frontiers}
+  \framesubtitle{\href{https://sierra.ai/blog/bench-advancing-agent-benchmarking-to-knowledge-and-voice}{sierra.ai/blog}}
+
+  Since launching in June 2024, \taubench{} has become the \textbf{de facto standard} for evaluating whether AI agents can reliably complete tasks end-to-end.
+
+  \vspace{0.8em}
+  $\tau^3$-Bench expands the benchmark in two new directions:
+
+  \vspace{0.5em}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{$\tau$-Knowledge}
+
+      \vspace{0.3em}
+      Can agents reason over \textbf{large, messy knowledge bases}?
+      \begin{itemize}
+        \item New Banking domain: 698 docs, $\sim$195K tokens
+        \item Best model (GPT-5.2, high reasoning): \textbf{25\%}
+        \item Even with gold documents: only 40\%
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{$\tau$-Voice}
+
+      \vspace{0.3em}
+      Can agents complete tasks over \textbf{realistic voice calls}?
+      \begin{itemize}
+        \item Full-duplex voice with noise, accents, interruptions
+        \item 278 tasks across 3 domains
+        \item Best voice agent retains only \textbf{30--45\%} of text capability
+      \end{itemize}
+    \end{column}
+  \end{columns}
+
+\end{frame}
+
+%% ---------------------------------------------------------------------------
+%% Section Divider: tau-Voice
+%% ---------------------------------------------------------------------------
+
+{
+\usebackgroundtemplate{%
+  \includegraphics[width=\paperwidth,height=\paperheight]{assets/sierra-gradient-bg.png}%
+}
+\begin{frame}[plain]
+  \centering\vfill
+  {\fontsize{32}{38}\selectfont\interlight\textcolor{SierraWhite}{$\tau$-Voice}}
+  \vfill
+\end{frame}
+}
+
+%% ---------------------------------------------------------------------------
+%% Motivation
+%% ---------------------------------------------------------------------------
+
+\begin{frame}{The Problem: Can Voice Agents Actually Do the Job?}
+
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{Full-duplex voice agents} listen and speak simultaneously---the next frontier in conversational AI.
+
+      \vspace{1em}
+      But existing benchmarks evaluate capabilities \textbf{in isolation}:
+      \begin{itemize}
+        \item \tautwobench{}: complex grounded tasks, but \textbf{text-only}
+        \item Full-Duplex-Bench: turn-taking dynamics, but \textbf{no real tools}
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{Voice compounds task difficulty:}
+      \begin{itemize}
+        \item No punctuation, fillers, disfluencies
+        \item Accents, background noise, telephony compression
+        \item Interruptions, backchannels, real-time turn-taking
+      \end{itemize}
+
+      \vspace{1em}
+      \textcolor{SierraOrange}{\interbold{Missing:}} end-to-end evaluation of voice agents on \textbf{grounded tasks with real-world complexity}.
+    \end{column}
+  \end{columns}
+
+\end{frame}
+
+%% ---------------------------------------------------------------------------
+%% SLIDE 3: Framework Architecture
+%% ---------------------------------------------------------------------------
+
+\begin{frame}{\tauvoice{} Framework}
+  \framesubtitle{Extending \tautwobench{} to full-duplex voice interaction}
+
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \vspace{-0.5em}
+      \includegraphics[width=\textwidth]{data/tau-voice/figures/arch_diagram.pdf}
+    \end{column}
+    \begin{column}{0.43\textwidth}
+      \begin{small}
+      \begin{tabular}{@{}ll@{}}
+        \toprule
+        \textbf{Domains} & Retail, Airline, Telecom \\
+        \textbf{Tasks} & 278 total \\
+        \textbf{Providers} & Google, OpenAI, xAI \\
+        \bottomrule
+      \end{tabular}
+      \end{small}
+
+      \vspace{0.8em}
+      \textbf{Two conditions:}
+      \begin{itemize}
+        \item \textbf{Clean}: clear audio, American accent, no interruptions
+        \item \textbf{Realistic}: diverse accents, noise, turn-taking dynamics
+      \end{itemize}
+
+      \vspace{0.5em}
+      {\small + single-factor ablations on Retail}
+    \end{column}
+  \end{columns}
+
+\end{frame}
+
+%% ---------------------------------------------------------------------------
+%% SLIDE 4: Voice User Simulator
+%% ---------------------------------------------------------------------------
+
+\begin{frame}{Voice User Simulator}
+  \framesubtitle{Generating realistic caller audio with controllable complexity}
+
+  \vspace{-0.5em}
+  \begin{center}
+    \includegraphics[width=0.78\textwidth,height=0.42\textheight,keepaspectratio]{data/tau-voice/figures/audio_pipeline.pdf}
+  \end{center}
+
+  \vspace{-0.5em}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \begin{small}
+      \begin{itemize}
+        \item 7 voice personas with diverse accents
+        \item Realistic audio: noise, burst sounds, frame drops, muffling, telephony compression
+      \end{itemize}
+      \end{small}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{small}
+      \begin{itemize}
+        \item LLM-driven turn-taking: interruptions, backchannels, yielding
+        \item Decoupled from wall-clock time $\rightarrow$ use most capable LLM without real-time constraints
+      \end{itemize}
+      \end{small}
+    \end{column}
+  \end{columns}
+
+\end{frame}
+
+%% ---------------------------------------------------------------------------
+%% SLIDE 5: See it in Action
+%% ---------------------------------------------------------------------------
+
+{
+\setbeamercolor{background canvas}{bg=SierraBone}
+\begin{frame}[plain]
+  \centering\vfill
+  {\fontsize{22}{28}\selectfont\interlight\textcolor{SierraCharcoal}{%
+    See it in action%
+  }}
+
+  \vspace{2em}
+
+  {\fontsize{14}{18}\selectfont\intermedium\textcolor{SierraGreen}{%
+    \href{https://taubench.com/\#trajectory-visualizer?model=xai-realtime_sierra_2026-03-03\&domain=airline\&task=0}{taubench.com/\#trajectory-visualizer}%
+  }}
+
+  \vspace{0.5em}
+  {\fontsize{10}{13}\selectfont\interregular\textcolor{SierraTaupe}{%
+    Interactive trajectory viewer --- audio, transcripts, tool calls, and turn-taking events%
+  }}
+
+  \vspace{1.5em}
+
+  {\fontsize{14}{18}\selectfont\intermedium\textcolor{SierraGreen}{%
+    \href{https://taubench.com/\#leaderboard}{taubench.com/\#leaderboard}%
+  }}
+
+  \vspace{0.5em}
+  {\fontsize{10}{13}\selectfont\interregular\textcolor{SierraTaupe}{%
+    Full leaderboard across providers, domains, and conditions%
+  }}
+
+  \vfill
+\end{frame}
+}
+
+%% ---------------------------------------------------------------------------
+%% SLIDE 6: Headline Results
+%% ---------------------------------------------------------------------------
+
+\begin{frame}{Headline: A Large Voice--Text Gap Remains}
+  \framesubtitle{Task completion (pass@1) averaged across all domains}
+
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \vspace{-0.5em}
+      \includegraphics[width=\textwidth]{data/tau-voice/results/pass_1_headline_simple.pdf}
+
+      \vspace{0.3em}
+      {\small Voice agents retain only \textbf{30--45\%} of text SOTA capability under realistic conditions.}
+    \end{column}
+    \begin{column}{0.50\textwidth}
+      \textbf{Key findings:}
+      \begin{itemize}
+        \item Best voice (xAI, 51\%) nearly matches GPT-4.1 (54\%) under Clean---but \textbf{still 34pp below GPT-5}
+        \item Realistic conditions drop performance a further 12pp on average
+        \item Google most \textbf{robust} to degradation (loses 17\% of Clean)
+        \item xAI slightly \textbf{highest absolute} scores
+        \item All gaps are \textbf{statistically significant} ($p < 0.05$, paired permutation tests)
+      \end{itemize}
+    \end{column}
+  \end{columns}
+
+\end{frame}
+
+%% ---------------------------------------------------------------------------
+%% SLIDE 7: The Field is Moving Fast
+%% ---------------------------------------------------------------------------
+
+\begin{frame}{This Field is Moving Fast}
+
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \textbf{Active engagement with all major providers:}
+
+      \vspace{0.5em}
+      \begin{itemize}
+        \item \textbf{OpenAI}: Realtime 1.0 $\rightarrow$ 1.5 was a huge leap
+        \item \textbf{Google}: Just released a new model --- Gemini Live 3.1 with thinking=HIGH is now the \textbf{new best overall} ($\sim$44\%)
+        \item \textbf{xAI}: Current published best (38\%)
+        \item \textbf{Amazon}: Reached out to get Nova Sonic evaluated
+      \end{itemize}
+
+      \vspace{0.5em}
+      {\small Providers are actively seeking evaluation on \tauvoice{} --- the benchmark is becoming a reference point.}
+    \end{column}
+    \begin{column}{0.43\textwidth}
+      \textbf{Leaderboard is shifting:}
+
+      \vspace{0.5em}
+      \begin{small}
+      \begin{tabular}{@{}lc@{}}
+        \toprule
+        \textbf{Model} & \textbf{pass@1} \\
+        \midrule
+        \textcolor{SierraOrange}{\textbf{Gemini 3.1 (think)}} & \textcolor{SierraOrange}{\textbf{$\sim$44\%}} \\
+        xAI Grok Voice & 38\% \\
+        GPT Realtime 1.5 & 35\% \\
+        \bottomrule
+      \end{tabular}
+      \end{small}
+
+      \vspace{1.5em}
+      {
+      \setlength{\fboxsep}{8pt}
+      \colorbox{SierraDarkGreen}{%
+        \parbox{0.9\linewidth}{\centering\textcolor{SierraWhite}{\intermedium We are proactively shaping\\the future of voice-to-voice models.}}%
+      }
+      }
+    \end{column}
+  \end{columns}
+
+\end{frame}
+
+%% ---------------------------------------------------------------------------
+%% SLIDE 8: Ablations & Voice Interaction Quality
+%% ---------------------------------------------------------------------------
+
+\begin{frame}{What Hurts Most? Ablations \& Voice Quality}
+
+  \begin{columns}[T]
+    \begin{column}{0.50\textwidth}
+      \vspace{-0.5em}
+      \includegraphics[width=\textwidth,height=0.65\textheight,keepaspectratio]{data/tau-voice/results/ablation_retail.pdf}
+
+      \vspace{0.2em}
+      {\small \textcolor{SierraOrange}{\interbold{Accents}} most damaging on avg ($-$10pp) but highly provider-specific.}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{Voice interaction quality} {\small (Realistic)}
+
+      \vspace{0.3em}
+      \begin{small}
+      \begin{tabular}{@{}lcccc@{}}
+        \toprule
+        & \rotatebox{60}{\textbf{Latency}$\downarrow$} & \rotatebox{60}{\textbf{Resp.}$\uparrow$} & \rotatebox{60}{\textbf{Intrpt.}$\downarrow$} & \rotatebox{60}{\textbf{Select.}$\uparrow$} \\
+        \midrule
+        Google & 1.14s & 69\% & \textbf{21\%} & 54\% \\
+        OpenAI & \textbf{0.90s} & \textbf{100\%} & 14\% & 6\% \\
+        xAI & 1.15s & 83\% & 84\% & \textbf{57\%} \\
+        \bottomrule
+      \end{tabular}
+      \end{small}
+
+      \vspace{0.5em}
+      {\small Each provider excels on different dimensions but fails on at least one. \textbf{No provider masters both task completion and conversational dynamics.}}
+    \end{column}
+  \end{columns}
+
+\end{frame}
+
+%% ---------------------------------------------------------------------------
+%% SLIDE 9: Error Analysis & Takeaways
+%% ---------------------------------------------------------------------------
+
+\begin{frame}{Error Analysis \& Takeaways}
+
+  \begin{columns}[T]
+    \begin{column}{0.45\textwidth}
+      \textbf{91 failed simulations analyzed:}
+
+      \vspace{0.3em}
+      \begin{small}
+      \begin{tabular}{@{}lcc@{}}
+        \toprule
+        \textbf{Error Source} & \makecell{\textbf{Voice-}\\\textbf{Fragile}} & \makecell{\textbf{Noise-}\\\textbf{Fragile}} \\
+        \midrule
+        Agent errors & \textbf{79\%} & \textbf{90\%} \\
+        \quad Logical & 13 & 16 \\
+        \quad Transcription & 10 & 16 \\
+        \quad Hallucination & 6 & 6 \\
+        \midrule
+        User sim errors & 21\% & 10\% \\
+        \bottomrule
+      \end{tabular}
+      \end{small}
+
+      \vspace{0.3em}
+      {\small Failures reflect genuine agent limitations, not simulator artifacts.}
+    \end{column}
+    \begin{column}{0.53\textwidth}
+      \textbf{Key takeaways:}
+
+      \vspace{0.2em}
+      \begin{enumerate}
+        \item \textbf{The voice--text gap is real and large.} Best voice retains only 45\% of text SOTA---even under clean conditions.
+
+        \item \textbf{It's not just ASR.} Logical errors and hallucinations dominate even with clean audio.
+
+        \item \textbf{Acoustic realism matters unevenly.} Accents are devastating for some providers but not others---accessibility concerns.
+
+        \item \textbf{No provider does it all.} Fundamental trade-off between responsiveness and restraint.
+      \end{enumerate}
+    \end{column}
+  \end{columns}
+
+\end{frame}
+
+%% ---------------------------------------------------------------------------
+%% Thank You
+%% ---------------------------------------------------------------------------
+
+{
+\usebackgroundtemplate{%
+  \includegraphics[width=\paperwidth,height=\paperheight]{assets/sierra-dusk-bg.jpg}%
+}
+\begin{frame}[plain]
+  \centering
+  \vfill
+  {\fontsize{48}{58}\selectfont\interlight\textcolor{SierraWhite}{Thank you{\large\textbullet}}}
+
+  \vspace{1.5em}
+  \includegraphics[height=1.2cm]{assets/sierra-logo-white.png}
+  \vfill
+\end{frame}
+}
+
+%% ===========================================================================
+%% EXTRA MATERIAL
+%% ===========================================================================
+
+\appendix
+
+{
+\usebackgroundtemplate{%
+  \includegraphics[width=\paperwidth,height=\paperheight]{assets/sierra-gradient-bg.png}%
+}
+\begin{frame}[plain]
+  \centering\vfill
+  {\fontsize{32}{38}\selectfont\interlight\textcolor{SierraWhite}{Extra Material}}
+  \vfill
+\end{frame}
+}
+
+%% ---------------------------------------------------------------------------
+%% Extra: Full Results Table
+%% ---------------------------------------------------------------------------
+
+\begin{frame}{Full Results: Text vs Voice (pass@1)}
+
+  \begin{center}
+    \begin{scriptsize}
+    \renewcommand{\arraystretch}{0.95}
+    \begin{tabular}{@{}llccc@{}}
+      \toprule
+       & & & \multicolumn{2}{c}{\textbf{Voice}} \\
+      \cmidrule(l){4-5}
+      \textbf{Domain} & \textbf{Provider} & \textbf{Text (GPT-5 / GPT-4.1)} & \textbf{Clean} & \textbf{Realistic} \\
+      \midrule
+      \multirow{3}{*}{All} & Google & \multirow{3}{*}{85\% / 54\%} & 31\% ($-$54pp) & 26\% ($-$59pp) \\
+       & OpenAI & & 49\% ($-$36pp) & 35\% ($-$49pp) \\
+       & xAI & & \textbf{51\%} ($-$34pp) & \textbf{38\%} ($-$46pp) \\
+      \midrule
+      \multirow{3}{*}{Retail} & Google & \multirow{3}{*}{81\% / 76\%} & 45\% ($-$36pp) & 30\% ($-$51pp) \\
+       & OpenAI & & \textbf{71\%} ($-$10pp) & \textbf{45\%} ($-$36pp) \\
+       & xAI & & 48\% ($-$33pp) & 39\% ($-$42pp) \\
+      \midrule
+      \multirow{3}{*}{Airline} & Google & \multirow{3}{*}{83\% / 53\%} & 28\% ($-$55pp) & 30\% ($-$53pp) \\
+       & OpenAI & & \textbf{48\%} ($-$35pp) & \textbf{40\%} ($-$43pp) \\
+       & xAI & & 46\% ($-$37pp) & 36\% ($-$47pp) \\
+      \midrule
+      \multirow{3}{*}{Telecom} & Google & \multirow{3}{*}{90\% / 34\%} & 20\% ($-$70pp) & 18\% ($-$72pp) \\
+       & OpenAI & & 28\% ($-$62pp) & 21\% ($-$69pp) \\
+       & xAI & & \textbf{58\%} ($-$32pp) & \textbf{40\%} ($-$50pp) \\
+      \bottomrule
+    \end{tabular}
+    \end{scriptsize}
+  \end{center}
+
+  {\scriptsize Deltas relative to GPT-5. xAI leads overall; OpenAI leads Retail (71\% Clean); domain patterns vary substantially.}
+
+\end{frame}
+
+%% ---------------------------------------------------------------------------
+%% Extra: Failure Mode Details
+%% ---------------------------------------------------------------------------
+
+\begin{frame}{Failure Mode Details}
+  \framesubtitle{Common patterns from qualitative error analysis}
+
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{Authentication bottleneck:}
+      \begin{itemize}
+        \item Agents fail to transcribe names/emails even when spelled letter-by-letter
+        \item Blocks all downstream actions
+        \item Compounds with accents
+      \end{itemize}
+
+      \vspace{0.5em}
+      \textbf{Hallucinated completions:}
+      \begin{itemize}
+        \item Agent says ``I've updated your address'' without making any tool call
+        \item Policy violations under time pressure
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{Multi-step tracking failures:}
+      \begin{itemize}
+        \item Completes part of a request, forgets remaining items
+        \item Information across turns gets lost
+      \end{itemize}
+
+      \vspace{0.5em}
+      \textbf{Compounding under realistic conditions:}
+      \begin{itemize}
+        \item Unresponsive after repeated auth failures
+        \item Verbosity causes timeouts on complex tasks
+        \item Real-time pressure prevents ``thinking silently''
+      \end{itemize}
+    \end{column}
+  \end{columns}
+
+\end{frame}
+
+%% ---------------------------------------------------------------------------
+%% Extra: Speech Activity Timeline
+%% ---------------------------------------------------------------------------
+
+\begin{frame}{Example: Speech Activity Timeline (Task 41, Retail)}
+  \framesubtitle{Full-duplex interaction with Gemini --- interruptions, backchannels, noise, and agent errors}
+
+  \vspace{-0.3em}
+  \begin{center}
+    \includegraphics[width=\textwidth]{data/tau-voice/figures/task_41_data/speech activity timeline.pdf}
+  \end{center}
+
+  \vspace{-0.5em}
+  {\scriptsize Blue = user, Red = agent, Purple = overlap. Markers: observations (interruptions, backchannels, noise) and agent errors (no-response, incorrect yield). Outcome: \textbf{failed}.}
+
+\end{frame}
+
+%% ---------------------------------------------------------------------------
+%% Extra: Tick Transcript for Timeline
+%% ---------------------------------------------------------------------------
+
+\begin{frame}{Example: Tick Transcript (Task 41)}
+
+  \vspace{-0.3em}
+  {\scriptsize Key moments showing simultaneous speech. \textcolor{SierraOrange}{Orange} = agent error. \textcolor{SierraGreen}{Green} = correct. [Brackets] = non-agent-directed.}
+
+  \vspace{0.2em}
+  \begin{center}
+  \resizebox{0.95\textwidth}{!}{%
+  \fontsize{6.5}{8}\selectfont
+  \begin{tabular}{@{}rlll@{}}
+    \toprule
+    \textbf{Time} & \textbf{User} & \textbf{Agent} & \textbf{Event} \\
+    \midrule
+    5--8s & Hi, I have two prob- & & \\[-1pt]
+    8s & -lems. First, I ordered\ldots & Hello! & \textit{agent interrupts user} \\
+    \midrule
+    67--68s & & \ldots Which would you like to do first? & \\[-1pt]
+    68s & Jigsaw first. & & \textit{user int., agent yields} \\[-1pt]
+    69--74s & & & \textcolor{SierraOrange}{\textit{no response for 5 seconds}} \\
+    \midrule
+    82s & {[Give me a moment.]} & \ldots exchange the puzzle-- & \textit{non-dir.\ speech} \\[-1pt]
+    84s & & Sure, take your time. & \textcolor{SierraOrange}{\textit{error: responds to non-dir.}} \\
+    \midrule
+    113s & Yeah, that's it. & \ldots Is that the one? We can exch- & \textit{user interrupts} \\[-1pt]
+    114--115s & & -ange it for a puzzle\ldots & \textcolor{SierraOrange}{\textit{agent does not yield}} \\
+    \midrule
+    121--122s & mm-hmm & \ldots Would you like to exchange\ldots & \textcolor{SierraGreen}{\textit{backchannel, correctly continues}} \\
+    \bottomrule
+  \end{tabular}%
+  }
+  \end{center}
+
+\end{frame}
+
+\end{document}

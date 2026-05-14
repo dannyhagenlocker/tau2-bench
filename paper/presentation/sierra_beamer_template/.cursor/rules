@@ -1,0 +1,246 @@
+# Sierra Beamer Template - Cursor AI Rules
+
+## Overview
+
+This is a LaTeX Beamer presentation template for Sierra AI. When helping users create or edit presentations, follow these guidelines to ensure slides match Sierra's brand identity.
+
+## Build Command
+
+To compile presentations, run:
+```bash
+make build
+```
+Or directly:
+```bash
+xelatex <filename>.tex
+```
+
+## File Structure
+
+- `*.tex` - Main presentation file(s) to edit
+- `*.sty` - Theme files (DO NOT EDIT)
+- `assets/` - Background images and logos
+- `fonts/` - Inter font family (bundled)
+
+## Sierra Brand Colors
+
+Use these named colors in presentations:
+
+### Primary (for backgrounds, emphasis)
+- `SierraDarkGreen` (#05351D) - Dark backgrounds
+- `SierraGreen` (#006838) - Primary brand green
+- `SierraCharcoal` (#302E2D) - Titles, headings
+- `SierraTaupe` (#625E5B) - Body text
+
+### Secondary (for accents, highlights)
+- `SierraOrange` (#F96205) - Alerts, emphasis
+- `SierraBlue` (#8BBFF5) - Secondary accent
+- `SierraGray` (#C1BCB7) - Muted elements
+
+### Backgrounds
+- `SierraBone` / `SierraBeige` (#F6F5F3) - Light slide background
+- `SierraWhite` (#FFFFFF) - White
+
+## Slide Types
+
+### 1. Title Slide (with forest background)
+```latex
+{
+\usebackgroundtemplate{%
+  \includegraphics[width=\paperwidth,height=\paperheight]{assets/sierra-forest-bg.png}%
+}
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+}
+```
+
+### 2. Section Divider (with gradient background)
+```latex
+{
+\usebackgroundtemplate{%
+  \includegraphics[width=\paperwidth,height=\paperheight]{assets/sierra-gradient-bg.png}%
+}
+\begin{frame}[plain]
+  \centering\vfill
+  {\fontsize{32}{38}\selectfont\interlight\textcolor{SierraWhite}{Section Title}}
+  \vfill
+\end{frame}
+}
+```
+
+### 3. Basic Content Slide
+```latex
+\begin{frame}{Slide Title}
+  Your content here.
+  
+  \begin{itemize}
+    \item First point
+    \item Second point
+    \item Third point
+  \end{itemize}
+\end{frame}
+```
+
+### 4. Slide with Subtitle
+```latex
+\begin{frame}{Main Title}
+  \framesubtitle{Subtitle text}
+  
+  Content here...
+\end{frame}
+```
+
+### 5. Two-Column Layout
+```latex
+\begin{frame}{Two Columns}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{Left Column}
+      
+      Left content...
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{Right Column}
+      
+      Right content...
+    \end{column}
+  \end{columns}
+\end{frame}
+```
+
+### 6. Statement Slide (Light)
+```latex
+{
+\setbeamercolor{background canvas}{bg=SierraBone}
+\begin{frame}[plain]
+  \centering\vfill
+  {\fontsize{24}{30}\selectfont\interlight\textcolor{SierraCharcoal}{%
+    Your key statement here.%
+  }}
+  \vfill
+\end{frame}
+}
+```
+
+### 7. Statement Slide (Green)
+```latex
+{
+\setbeamercolor{background canvas}{bg=SierraGreen}
+\begin{frame}[plain]
+  \centering\vfill
+  {\fontsize{24}{30}\selectfont\interlight\textcolor{SierraWhite}{%
+    Your impactful message.%
+  }}
+  \vfill
+\end{frame}
+}
+```
+
+### 8. Quote Slide
+```latex
+{
+\setbeamercolor{background canvas}{bg=SierraBone}
+\begin{frame}[plain]
+  \centering\vfill
+  \begin{minipage}{0.75\paperwidth}
+    \centering
+    {\fontsize{18}{24}\selectfont\interlight\textcolor{SierraCharcoal}{%
+      "Your quote text here."%
+    }}
+    \vspace{1.5em}
+    
+    {\fontsize{11}{13}\selectfont\intermedium\textcolor{SierraTaupe}{Speaker Name}}
+    
+    {\fontsize{9}{11}\selectfont\interlight\textcolor{SierraTaupe}{Title/Role}}
+  \end{minipage}
+  \vfill
+\end{frame}
+}
+```
+
+### 9. Blocks (Info boxes)
+```latex
+\begin{frame}{With Blocks}
+  \begin{block}{Standard Block}
+    Green header, white body - for general information
+  \end{block}
+  
+  \begin{alertblock}{Alert Block}
+    Orange header - for warnings or important points
+  \end{alertblock}
+  
+  \begin{exampleblock}{Example Block}
+    Blue/teal header - for examples
+  \end{exampleblock}
+\end{frame}
+```
+
+### 10. Table
+```latex
+\begin{frame}{Data Table}
+  \begin{table}
+    \centering
+    \begin{tabular}{lcc}
+      \toprule
+      \textbf{Item} & \textbf{Value 1} & \textbf{Value 2} \\
+      \midrule
+      Row 1 & 100 & 200 \\
+      Row 2 & 150 & 250 \\
+      \bottomrule
+    \end{tabular}
+    \caption{Table caption}
+  \end{table}
+\end{frame}
+```
+
+### 11. Thank You Slide
+```latex
+{
+\usebackgroundtemplate{%
+  \includegraphics[width=\paperwidth,height=\paperheight]{assets/sierra-dusk-bg.jpg}%
+}
+\begin{frame}[plain]
+  \centering\vfill
+  {\fontsize{48}{58}\selectfont\interlight\textcolor{SierraWhite}{Thank you{\large\textbullet}}}
+  \vspace{2.5em}
+  \includegraphics[height=1.5cm]{assets/sierra-logo-white.png}
+  \vfill
+\end{frame}
+}
+```
+
+## Typography Commands
+
+- `\interlight` - Light weight (titles, statements)
+- `\interregular` - Regular weight (body text)
+- `\intermedium` - Medium weight (subtitles)
+- `\intersemibold` - SemiBold weight (headings)
+- `\interbold` - Bold weight (strong emphasis)
+
+## Best Practices
+
+1. **Keep slides simple** - Limit to 3-5 bullet points per slide
+2. **Use consistent colors** - Stick to Sierra brand palette
+3. **One idea per slide** - Break complex topics into multiple slides
+4. **Use statement slides** - For key takeaways and transitions
+5. **Section dividers** - Help audience follow the structure
+
+## Common User Requests
+
+When users ask to:
+- "Add a slide about X" → Create a basic content slide with title and bullet points
+- "Create a comparison" → Use two-column layout
+- "Add a quote" → Use quote slide format
+- "Make an impact" → Use statement slide (green for emphasis)
+- "Add a section" → Use section divider with gradient background
+- "Add a table" → Use booktabs style table
+
+## Important Notes
+
+- Always maintain the slide structure with `\begin{frame}` and `\end{frame}`
+- Use `[plain]` option for full-screen slides (title, statement, thank you)
+- Background images must be wrapped in `{ }` braces for scoping
+- The theme automatically handles colors, fonts, and spacing
+
+
