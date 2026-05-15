@@ -171,4 +171,26 @@ Behavioral plausibility (holistic) & 3.1 / 4 \\
 
 \new{\subsection{ASR-enabled Evaluation}\label{app:asr-enabled}}
 
-\todo{Add ASR-enabled appendix content: full results of running the benchmark with the user simulator perceiving the agent's speech through ASR. Should report (i) the ASR pipeline used, (ii) the per-condition task-completion scores, (iii) the paired permutation test against the default configuration, and (iv) confirmation that the text-to-voice gap and the clean-to-realistic gap both remain statistically significant. (addresses beyN follow-up and vw95 follow-up.)}
+\new{We ran a preliminary single-run evaluation on Retail ($n=114$) in which the user simulator perceives the agent through Deepgram Nova-3 streaming ASR (telephony $\mu$-law @ 8\,kHz, finalized segments) rather than the agent's native transcript. Both the text-to-voice gap and the Clean-to-Realistic degradation persist with comparable magnitude (Table~\ref{tab:asr-enabled}); formal significance testing is deferred to future work.}\why{addresses beyN follow-up and vw95 follow-up}
+
+\begin{table}[h]
+\caption{\new{ASR-enabled vs.\ default-mode evaluation on Retail ($n=114$, 1 run). Default-mode columns are the Retail subset of Table~\ref{tab:text-control-regular}.}\why{addresses beyN follow-up and vw95 follow-up}}
+\label{tab:asr-enabled}
+\centering
+\begin{small}
+\new{\begin{tabular}{@{}lcccc@{}}
+\toprule
+ & \multicolumn{2}{c}{\textbf{Default}} & \multicolumn{2}{c}{\textbf{ASR-enabled}} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+\textbf{Model} & \textbf{Clean} & \textbf{Realistic} & \textbf{Clean} & \textbf{Realistic} \\
+\midrule
+\texttt{gemini-live-2.5} & 45\% & 30\% & 40\% & 25\% \\
+\texttt{gpt-realtime-1.5} & 71\% & 45\% & 61\% & 33\% \\
+\texttt{grok-voice} & 48\% & 39\% & 48\% & 22\% \\
+\midrule
+GPT-4.1 (text) & \multicolumn{2}{c}{76\%} & \multicolumn{2}{c}{---} \\
+GPT-5 (text) & \multicolumn{2}{c}{81\%} & \multicolumn{2}{c}{---} \\
+\bottomrule
+\end{tabular}}
+\end{small}
+\end{table}

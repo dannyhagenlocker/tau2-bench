@@ -140,7 +140,7 @@ The actionable list for paper edits.
 
 ### C3. New appendix material
 
-- [ ] **New appendix section**: full ASR-enabled evaluation results (from B2). **Blocked on data** (Victor to share results). One subtlety: line 956 of the reviews says the text-free configuration "along with results for existing models in that setting, **is now included**" — past-tense framing in the rebuttal to vw95. Reviewers may expect this section to be ready, not just promised.
+- [x] **New appendix section**: full ASR-enabled evaluation results (from B2). Landed as `app:asr-enabled` (H.6) with framing paragraph, methodology, side-by-side default-mode vs. ASR-enabled results table on Retail (`tab:asr-enabled`), and an interpretive paragraph honestly labeling the run as preliminary single-run aggregates. The conclusion (`contents/conclusion.tex:12`) "remain statistically significant" claim was softened to "persist with comparable magnitude" since no formal stat test was run (Q8 = no). ASR pipeline named per beyN follow-up: Deepgram Nova-3, streaming WebSocket, telephony μ-law @ 8 kHz, finalized segments only. All edits wrapped `\new{}\why{addresses beyN follow-up and vw95 follow-up}`. Clean 37-page build (was 35); page growth is entirely in the appendix, main content §1–§6 unchanged at pages 1–10.
 - [ ] **Release LiveKit integration code** for cascaded pipelines (Reviewer beyN Q2). No commitment to put cascaded numbers in the paper, but code must be released.
 - [ ] Consider adding (not strictly promised, but high-value):
   - [x] **Human annotation study of simulator realism** (from B3) — landed: §6.1 Simulator Fidelity paragraph (`conclusion.tex`) + new appendix subsection `Simulator Realism Validation` (`\label{app:simulator-realism}`, `additional_results.tex`).
@@ -241,52 +241,11 @@ The actionable list for paper edits.
 - Simulator-realism human study (B3): §6.1 paragraph + new `app:simulator-realism` appendix subsection with per-dimension table.
 - Audited audio-native model survey (C7): new `app:audio-native-audit` appendix subsection with 11-row capability matrix (`tab:audio-native-audit`), one-sentence cross-ref from §4.2. Audit dated March 2026; 8 new bib entries added (`c9edeff`); landing commit `830f164`.
 - Figure 1 regeneration (C2.1 follow-up): regenerated `results/pass_1_headline_simple.pdf` with canonical model aliases (`gemini-live-2.5`, `gpt-realtime-1.5`, `grok-voice`) replacing the human-readable provider names, matching Table~\ref{tab:models} and the paper prose. Source fix landed in `src/experiments/tau_voice/exp/plot_style.py` (`SHORT_MODEL_NAMES`); regenerated from `data/exp/final_voice_results_trial1_analysis` (the same single-trial CSV that backs the main results tables, so headline numbers 31/26, 49/35, 51/38 are unchanged). Removed the inline `\todo` from `intro.tex`. Landing commit `21e31ece`.
+- C3 ASR-enabled appendix (2026-05-15): landed `app:asr-enabled` (H.6) with framing, methodology, side-by-side default-vs-ASR results table on Retail (`tab:asr-enabled`), and an interpretive paragraph. No formal stat test was run on the ASR data so the conclusion's "remain statistically significant" claim was softened to "persist with comparable magnitude". ASR pipeline named per beyN follow-up: Deepgram Nova-3, streaming WebSocket, telephony μ-law @ 8 kHz, finalized segments only. PDF grew 35→37 pages; main content §1–§6 unchanged at 1–10.
 
 **Remaining, ordered by urgency × effort:**
 
-1. **C3 — ASR-enabled appendix.** Partial data in hand (raw block below, shared 2026-05-15). Eight metadata questions outstanding before the appendix can be drafted — answers will determine framing, stat-sig claims, and whether the conclusion's existing "remains statistically significant" promise (`contents/conclusion.tex:12`) can be kept as-is or must be softened. **Do not draft the appendix until Q1–Q8 are answered.** The current `\todo{}` placeholder in `appendix/additional_results.tex:223` (under `\new{\subsection{ASR-enabled Evaluation}\label{app:asr-enabled}}`, line 221) is intentionally left in place so the build still flags this as outstanding.
-
-   <details>
-   <summary><strong>Raw data (provided 2026-05-15)</strong></summary>
-
-   | Provider | Control (no noise) | Regular (with noise) | Delta |
-   |----------|-------------------|---------------------|-------|
-   | OpenAI | 0.61 | 0.33 | -0.28 |
-   | xAI | 0.48 | 0.22 | -0.26 |
-   | Gemini 2.5 | 0.40 | 0.25 | -0.15 |
-
-   </details>
-
-   <details>
-   <summary><strong>Open metadata questions (asked of data owner 2026-05-15; awaiting response)</strong></summary>
-
-   - **Q1. Domain.** What domain(s) was this run on? The shape (OpenAI > xAI > Gemini, 61/48/40 Control) doesn't cleanly match either the default-mode "All" row (gemini-live-2.5 31% / gpt-realtime-1.5 49% / grok-voice 51% Clean) or the default-mode Retail-only row (45 / 71 / 48 Clean). Best guess: Retail-114, but the relative ordering shifts under ASR. **Need confirmation.**
-   - **Q2. Condition mapping.** Does "Control (no noise)" map to the paper's **Clean** and "Regular (with noise)" map to **Realistic**? Almost certainly yes (Clean = no noise + American accents + standard turn-taking; Realistic = noise + accents + behaviors), but confirm so the appendix uses the paper's vocabulary consistently.
-   - **Q3. Run count and per-task scores.** Is this 1 run or 2 runs per condition? Are per-task pass/fail scores available, or only aggregate pass rates? Determines whether we can run a **paired permutation test** against the default mode (matching the C6 methodology) or have to label this a single-run preliminary.
-   - **Q4. Model aliases.** Confirm "OpenAI / xAI / Gemini 2.5" in the table = `gpt-realtime-1.5` / `grok-voice` / `gemini-live-2.5` (same model vintage as the default-mode camera-ready numbers). Reviewer v3yK W1 requires the appendix to use the aliases, not provider names.
-   - **Q5. Reporting precision.** Convert 0.61 / 0.33 / etc. to integer percentages (61% / 33%) for paper convention? Or keep two-decimal proportions?
-   - **Q6. ASR pipeline.** Which ASR is the user simulator using to perceive the agent? Deepgram Nova-3 (same as the cascaded baseline)? Whisper-large-v3? Something else? Reviewer beyN's follow-up specifically asked for the pipeline to be named.
-   - **Q7. Gemini delta is notably smaller (-0.15 vs -0.26 and -0.28).** Worth one sentence in the appendix interpretation, but which reading is correct: (a) Gemini is genuinely more robust to ASR-mediated user perception; (b) Gemini already had the lowest Control score (40%) so less ceiling to lose; (c) something else noticed at run time. We must not over-claim (a) if (b) explains it.
-   - **Q8. Stat sig.** The conclusion currently promises "under [ASR-enabled] mode the text-to-voice gap and the clean-to-realistic degradation both remain statistically significant" (`contents/conclusion.tex:12`). Were stat tests actually run on this data? Sanity check from the numbers alone suggests both gaps probably are significant (Text 76% → 40–61% voice and 28–15pp Clean→Realistic drops), but I will not write "remains statistically significant" in the appendix without confirmation. If no stat test was run, the conclusion promise has to soften to "the gaps in our preliminary ASR-enabled run are consistent with the default-mode findings" or similar.
-
-   </details>
-
-   <details>
-   <summary><strong>Planned appendix structure (once Q1–Q8 answered)</strong></summary>
-
-   Mirrors `app:audio-native-audit` and `app:commonsense-taxonomy`:
-
-   1. **Framing paragraph** — why two configurations, why ASR-enabled is a stricter stress test, explicit upper-bound interpretation of default mode (this is already promised in `contents/conclusion.tex:12` and `methods/voice_user_simulator.tex:6`).
-   2. **Methodology** — ASR pipeline (Q6), task subset/domain (Q1), run count (Q3).
-   3. **Results table** — per-model Clean / Realistic with deltas, side-by-side with default-mode reference numbers from `tab:text-control-regular` so the gap is visually unmistakable.
-   4. **Stat sig** (if Q3/Q8 supports it) — paired permutation result against default mode, Holm-Bonferroni corrected to match C6; otherwise an honest "preliminary, deferred to follow-up" sentence.
-   5. **Interpretation** (~3 sentences) — both gaps persist; Gemini-specific note (Q7); main-text upper-bound framing holds.
-
-   All wrapped `\new{...}\why{addresses beyN follow-up; vw95 follow-up}`.
-
-   </details>
-
-2. **C3 — LiveKit code release** (repo work, not paper LaTeX).
+1. **C3 — LiveKit code release** (repo work, not paper LaTeX).
 
 ---
 
