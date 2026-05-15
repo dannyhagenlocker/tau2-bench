@@ -187,7 +187,19 @@ The actionable list for paper edits.
 
 ### C8. Refined error taxonomy (commonsense vs policy)
 
-- [x] **Add the commonsense-vs-policy error taxonomy to §5.2** (Reviewer vw95 W2, Reviewer macs final-framing critique). Landed using the **Option C** placement: a load-bearing summary paragraph in §5.2 with the 7%/38%/22%/24%/6%/3% headline plus the explicit 93% commonsense framing, and full per-bucket definitions, examples, and interpretation in new appendix subsection `Commonsense vs. Policy Error Taxonomy` (`\label{app:commonsense-taxonomy}`, H.4 in the camera-ready PDF). Bucket counts taken verbatim from the rebuttal (5/26/15/16/4/2 of 68), with the 23.5%→24% and 5.9%→6% rounding made auditable by reporting both the count and the percent. All edits wrapped in `\new{}\why{vw95 W2; macs final framing}`. No undefined references, no multiply-defined labels, clean 35-page build.
+- [x] **Add the commonsense-vs-policy error taxonomy to §5.2** (Reviewer vw95 W2, Reviewer macs final-framing critique).
+
+  **Final landing (2026-05-15 revision):** Slimmed down to a two-sentence summary in §5.2 (`contents/results.tex`) with the headline 95% commonsense / 5% policy split and inline list of the five commonsense skill buckets (spelling, grounding, honesty, multi-part tracking, arithmetic), plus a forward pointer to §6.2 (Future Work). The §6.2 Future Work paragraph (`contents/conclusion.tex`) now closes with the dedicated-commonsense-probes anchor sentence.
+
+  **B1 resolved.** The original C8 landing reported `5/26/15/16/4/2 = 68 agent-attributable failures` taken verbatim from the rebuttal text. This contradicted the paper's own Table 5 (`tab:combined-error-analysis`) which reports 34 (Voice-Fragile) + 43 (Noise-Fragile) = 77 agent-attributable failures. Forensic audit using the per-row annotations in `papers/tau-voice/reviews/tau voice qa arxiv submission.xlsx` revealed the contradiction: the "68" in the rebuttal matches Mike's solo pre-reconciliation pure-agent count (25 voice + 43 noise), while "77" comes from the reconciled `overall` sheet that counts any-agent-involvement (using last-word-wins reclassification on combined sources like `user agent` and `agent user`). Both attribution rules are defensible; the paper was using both simultaneously without flagging the difference.
+
+  **Resolution:** Re-cut the skill-axis classification fresh on the reconciled 77 agent-attributable failures (the same denominator as Table 5). Result: 4/27/24/13/5/4 — 73/77 (94.8%) commonsense, 4/77 (5.2%) policy. Headline framing is preserved and slightly strengthened vs the rebuttal's 93%/7%. The rebuttal never explicitly committed to publishing the full taxonomy (only to *addressing* the W2 concern), so the dropped per-bucket counts and dropped appendix table are within scope.
+
+  **Removed from paper:** Appendix subsection `app:commonsense-taxonomy` (formerly H.4) entirely — framing paragraph, Table 18 (`tab:commonsense-taxonomy`), bucket definitions itemize, interpretation paragraph, reproducibility note. Appendix renumbered automatically (H.4 = Simulator Realism now, H.5 = Stat Sig, H.6 = ASR-Enabled). Page count went from 36 → 35.
+
+  **Committed receipt:** `papers/tau-voice/reviews/c8_skill_classification.csv` (77 rows, one per agent-attributable failure, with `skill_bucket` + `classification_rationale` columns) and `papers/tau-voice/reviews/c8_skill_classification.README.md` documenting the source data, methodology, and aggregate counts. This is the provenance backing the 95%/5% number in §5.2 — Rule 5 of the working conventions (every numerical claim in the paper should have a committed source) is satisfied.
+
+  All edits wrapped in `\new{}\why{addresses vw95 W2; macs final framing}`. Clean 35-page build, zero undefined references, zero multiply-defined labels, zero overfull hboxes >5pt.
 
 ---
 

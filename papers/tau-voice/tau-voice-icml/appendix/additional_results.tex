@@ -100,55 +100,6 @@ We categorize errors into six types based on observed failure patterns:
     \item \textbf{Early Termination} (User): User ends the call prematurely before the task is fully completed, often due to ambiguous communication where user assumes the task is done when it is not.
 \end{itemize}
 
-\new{\subsection{Commonsense vs.\ Policy Error Taxonomy}\label{app:commonsense-taxonomy}}
-
-\new{The error-type taxonomy in \S\ref{app:qualitative-analysis} (logical / transcription / hallucination / VAD-unresponsive / timeout / early-termination) categorizes failures by their \emph{mechanical surface form}. This appendix presents a complementary cut of the same 91 failed simulations along an orthogonal axis: the \emph{skill that would be required to succeed}. We focus on the 68 agent-attributable failures (the union of agent-side errors across both cohorts), since user-simulator failures are not informative about the agent's commonsense ability. The motivating question is whether the failures \tauvoice{} surfaces reflect domain-specific policy knowledge (which a generic LLM would not be expected to possess) or domain-agnostic commonsense conversational skills (which any competent voice conversation requires). Table~\ref{tab:commonsense-taxonomy} summarizes the breakdown.}\why{addresses vw95 W2; macs final framing}
-
-\begin{table}[h]
-\caption{\new{Re-categorization of the 68 agent-attributable failures (across both Voice-Fragile and Noise-Fragile cohorts) by the skill required to succeed. Buckets are mutually exclusive; each failure is assigned to the single skill whose absence is the proximal cause of the agent error. Only 7\% require domain-specific policy knowledge; 93\% reflect domain-agnostic commonsense conversational skills.}\why{addresses vw95 W2}}
-\label{tab:commonsense-taxonomy}
-\centering
-\begin{small}
-\new{\begin{tabular}{@{}lrr@{}}
-\toprule
-\textbf{Skill required to succeed} & \textbf{Count} & \textbf{\%} \\
-\midrule
-\multicolumn{3}{l}{\textit{Domain-specific}} \\
-Policy knowledge (retail/airline/telecom rules) & 5 & 7\% \\
-\midrule
-\multicolumn{3}{l}{\textit{Domain-agnostic commonsense}} \\
-Spelling (names, emails, IDs over audio) & 26 & 38\% \\
-Conversational grounding (confirm before irreversible actions) & 15 & 22\% \\
-Conversational honesty (do not claim un-executed actions) & 16 & 24\% \\
-Multi-part request tracking & 4 & 6\% \\
-Arithmetic / self-consistency & 2 & 3\% \\
-\midrule
-\textbf{Total} & \textbf{68} & \textbf{100\%} \\
-\bottomrule
-\end{tabular}}
-\end{small}
-\end{table}
-
-\new{\paragraph{Bucket definitions.}}\why{addresses vw95 W2}
-
-\new{\begin{itemize}[nosep,leftmargin=*]
-    \item \textbf{Policy knowledge} (5/68): Failure requires knowledge of a domain-specific rule documented in the agent's policy prompt (e.g., a retail rule about same-item exchange, an airline rule about baggage allowance tiers, a telecom rule about line-suspension eligibility). These are the failures a generic LLM would not be expected to handle without the policy.
-
-    \item \textbf{Spelling} (26/68): Agent transcribes a spelled-out name, email, or order ID incorrectly, blocking authentication or producing a downstream lookup miss. Verifiable from the database state: the spelled string never matches a user record.
-
-    \item \textbf{Conversational grounding} (15/68): Agent executes an irreversible action (refund, cancellation, address change, line suspension) without explicit user confirmation, or fails to surface information the user needs to make the next decision (e.g., refund amount, replacement availability). Verifiable from the tool-call log against the user instructions.
-
-    \item \textbf{Conversational honesty} (16/68): Agent claims to the user that an action was performed when no corresponding tool call exists in the trace. Verifiable from the tool-call log: the asserted action has no matching invocation.
-
-    \item \textbf{Multi-part request tracking} (4/68): User makes a compound request (e.g., ``cancel order X and also update my address''); agent completes one part and treats the call as resolved. Verifiable from the final database state vs.\ the gold target.
-
-    \item \textbf{Arithmetic / self-consistency} (2/68): Agent makes an arithmetic error (refund total, line-item sum) or contradicts an earlier statement in the same call. Verifiable from the dialogue trace.
-\end{itemize}}\why{addresses vw95 W2}
-
-\new{\paragraph{Interpretation.} The 93\%/7\% split provides empirical evidence that \tauvoice{} primarily measures domain-agnostic commonsense conversational ability through the task lens, not domain-specific policy lookup. Spelling, grounding, and honesty---the three largest buckets---are not retail-, airline-, or telecom-specific skills; they are properties of competent voice interaction in any setting. We agree with reviewer vw95 that dedicated commonsense probes (independent of grounded tasks) would be a valuable complement, and we note this as future work in \S\ref{sec:conclusion}.}\why{addresses vw95 W2}
-
-\new{\paragraph{Reproducibility note.} The bucket assignments were produced by re-coding the qualitative annotations from \S\ref{app:qualitative-analysis} (Table~\ref{tab:full-notes-both}) along the skill-required axis. A single failure can in principle exhibit more than one missing skill; we assign each to the single skill whose absence is the proximal cause, which matches the convention used for the mechanical error-type taxonomy in \S\ref{app:qualitative-analysis}. The underlying per-simulation annotations are reported in Table~\ref{tab:full-notes-both}; the re-coding from mechanical error type to skill-required bucket is mechanical (a fixed mapping plus a single ambiguous-case rule), and the resulting counts are the ones reported in Table~\ref{tab:commonsense-taxonomy}.}\why{addresses vw95 W2}
-
 \new{\subsection{Simulator Realism Validation}\label{app:simulator-realism}}
 
 \new{To validate that the voice user simulator produces interactions that resemble realistic caller behavior, we conducted a small human annotation study.}\why{addresses macs Q3/Q4}
