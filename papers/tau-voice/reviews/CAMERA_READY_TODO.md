@@ -232,7 +232,48 @@ The actionable list for paper edits.
 
 **Remaining, ordered by urgency × effort:**
 
-1. **C3 — ASR-enabled appendix.** Blocked on data (Victor to share results). Once data arrives, write up §appendix, update §3.1 / §6.1 references.
+1. **C3 — ASR-enabled appendix.** Partial data in hand (raw block below, shared 2026-05-15). Eight metadata questions outstanding before the appendix can be drafted — answers will determine framing, stat-sig claims, and whether the conclusion's existing "remains statistically significant" promise (`contents/conclusion.tex:12`) can be kept as-is or must be softened. **Do not draft the appendix until Q1–Q8 are answered.** The current `\todo{}` placeholder in `appendix/additional_results.tex:223` (under `\new{\subsection{ASR-enabled Evaluation}\label{app:asr-enabled}}`, line 221) is intentionally left in place so the build still flags this as outstanding.
+
+   <details>
+   <summary><strong>Raw data (provided 2026-05-15)</strong></summary>
+
+   | Provider | Control (no noise) | Regular (with noise) | Delta |
+   |----------|-------------------|---------------------|-------|
+   | OpenAI | 0.61 | 0.33 | -0.28 |
+   | xAI | 0.48 | 0.22 | -0.26 |
+   | Gemini 2.5 | 0.40 | 0.25 | -0.15 |
+
+   </details>
+
+   <details>
+   <summary><strong>Open metadata questions (asked of data owner 2026-05-15; awaiting response)</strong></summary>
+
+   - **Q1. Domain.** What domain(s) was this run on? The shape (OpenAI > xAI > Gemini, 61/48/40 Control) doesn't cleanly match either the default-mode "All" row (gemini-live-2.5 31% / gpt-realtime-1.5 49% / grok-voice 51% Clean) or the default-mode Retail-only row (45 / 71 / 48 Clean). Best guess: Retail-114, but the relative ordering shifts under ASR. **Need confirmation.**
+   - **Q2. Condition mapping.** Does "Control (no noise)" map to the paper's **Clean** and "Regular (with noise)" map to **Realistic**? Almost certainly yes (Clean = no noise + American accents + standard turn-taking; Realistic = noise + accents + behaviors), but confirm so the appendix uses the paper's vocabulary consistently.
+   - **Q3. Run count and per-task scores.** Is this 1 run or 2 runs per condition? Are per-task pass/fail scores available, or only aggregate pass rates? Determines whether we can run a **paired permutation test** against the default mode (matching the C6 methodology) or have to label this a single-run preliminary.
+   - **Q4. Model aliases.** Confirm "OpenAI / xAI / Gemini 2.5" in the table = `gpt-realtime-1.5` / `grok-voice` / `gemini-live-2.5` (same model vintage as the default-mode camera-ready numbers). Reviewer v3yK W1 requires the appendix to use the aliases, not provider names.
+   - **Q5. Reporting precision.** Convert 0.61 / 0.33 / etc. to integer percentages (61% / 33%) for paper convention? Or keep two-decimal proportions?
+   - **Q6. ASR pipeline.** Which ASR is the user simulator using to perceive the agent? Deepgram Nova-3 (same as the cascaded baseline)? Whisper-large-v3? Something else? Reviewer beyN's follow-up specifically asked for the pipeline to be named.
+   - **Q7. Gemini delta is notably smaller (-0.15 vs -0.26 and -0.28).** Worth one sentence in the appendix interpretation, but which reading is correct: (a) Gemini is genuinely more robust to ASR-mediated user perception; (b) Gemini already had the lowest Control score (40%) so less ceiling to lose; (c) something else noticed at run time. We must not over-claim (a) if (b) explains it.
+   - **Q8. Stat sig.** The conclusion currently promises "under [ASR-enabled] mode the text-to-voice gap and the clean-to-realistic degradation both remain statistically significant" (`contents/conclusion.tex:12`). Were stat tests actually run on this data? Sanity check from the numbers alone suggests both gaps probably are significant (Text 76% → 40–61% voice and 28–15pp Clean→Realistic drops), but I will not write "remains statistically significant" in the appendix without confirmation. If no stat test was run, the conclusion promise has to soften to "the gaps in our preliminary ASR-enabled run are consistent with the default-mode findings" or similar.
+
+   </details>
+
+   <details>
+   <summary><strong>Planned appendix structure (once Q1–Q8 answered)</strong></summary>
+
+   Mirrors `app:audio-native-audit` and `app:commonsense-taxonomy`:
+
+   1. **Framing paragraph** — why two configurations, why ASR-enabled is a stricter stress test, explicit upper-bound interpretation of default mode (this is already promised in `contents/conclusion.tex:12` and `methods/voice_user_simulator.tex:6`).
+   2. **Methodology** — ASR pipeline (Q6), task subset/domain (Q1), run count (Q3).
+   3. **Results table** — per-model Clean / Realistic with deltas, side-by-side with default-mode reference numbers from `tab:text-control-regular` so the gap is visually unmistakable.
+   4. **Stat sig** (if Q3/Q8 supports it) — paired permutation result against default mode, Holm-Bonferroni corrected to match C6; otherwise an honest "preliminary, deferred to follow-up" sentence.
+   5. **Interpretation** (~3 sentences) — both gaps persist; Gemini-specific note (Q7); main-text upper-bound framing holds.
+
+   All wrapped `\new{...}\why{addresses beyN follow-up; vw95 follow-up}`.
+
+   </details>
+
 2. **C3 — LiveKit code release** (repo work, not paper LaTeX).
 
 ---
@@ -244,5 +285,5 @@ The actionable list for paper edits.
   - **Option B — add a small "preliminary cascaded probe" appendix sidebar.** A new appendix subsection (~150 words, label something like `app:cascaded-baseline`) with: the pipeline configuration (Deepgram Nova-3, GPT-4.1 vintage, ElevenLabs v3, LiveKit version), the aggregate 63.2%/43.0% Retail numbers, side-by-side with the audio-native range (45–71% Clean, 30–45% Realistic) and text GPT-4.1 baseline (76%), plus the "one configuration cannot represent cascaded systems as a class" caveat verbatim from the rebuttal. One-sentence cross-ref in §5. Wrapped `\new{}\why{beyN Q2; macs W4}`. Pros: directly answers beyN Q2 in-paper rather than only in OpenReview; modest hedge against macs's "the paper is just text-tool-calling" framing (cascaded systems are the closest thing to text-tool-calling with audio, and they still show the gap). Cons: goes beyond what we promised at rebuttal (a *positive* deviation — no reviewer can fault us for *adding* baseline evidence — but worth noting).
   - **Hard prerequisite for Option B**: commit the raw cascaded-run artifacts somewhere under `data/exp/` (CSV / per-task log) with the same provenance discipline used for B3 (`paper/reviews/user_realism_annotations/`) and C6 (`paper/reviews/pairwise_statsig_all_domains.md`). Citing 63.2%/43.0% in the appendix without committed receipts would contradict the reproducibility-note discipline we applied for C8.
   - **Status:** deferred. Revisit when the cascaded-run artifacts are available (or when we explicitly decide to keep Option A).
-- The "ASR-enabled" results are described qualitatively in the rebuttal ("all scores dropped … significant findings held"). For the appendix we need the concrete numbers — confirm those runs are stored somewhere accessible and the analysis is reproducible. Tie back to `REPRODUCE.md`.
+- The "ASR-enabled" results were described qualitatively in the rebuttal ("all scores dropped … significant findings held"). Partial concrete data received 2026-05-15 (aggregate Control / Regular pass rates per provider; see C3 entry in the Remaining list for the raw block). Eight metadata questions outstanding (domain, condition mapping, run count, model aliases, reporting precision, ASR pipeline, Gemini interpretation, stat sig) before the appendix can be drafted. Stat-sig analysis reproducibility still needs to be tied back to `REPRODUCE.md` once the underlying runs are located.
 - Reviewer macs's confidence-5 strong reject was explicitly flagged to the AC. No action required, but worth noting in case the meta-review references it.
