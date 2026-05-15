@@ -1,0 +1,279 @@
+\begin{thebibliography}{30}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[{Amazon Web Services}(2025)]{amazon_nova_sonic_2025}
+{Amazon Web Services}.
+\newblock Introducing {Amazon} {Nova} {Sonic}: {Human}-like voice conversations
+  for generative {AI} applications, 2025.
+\newblock URL
+  \url{https://aws.amazon.com/blogs/aws/introducing-amazon-nova-sonic-human-like-voice-conversations-for-generative-ai-applications/}.
+\newblock Accessed March 2026.
+
+\bibitem[Ao et~al.(2024)Ao, Wang, Tian, Chen, Zhang, Lu, Wang, Li, and
+  Wu]{ao_sd-eval_2025}
+Ao, J., Wang, Y., Tian, X., Chen, D., Zhang, J., Lu, L., Wang, Y., Li, H., and
+  Wu, Z.
+\newblock {SD}-{Eval}: {A} {Benchmark} {Dataset} for {Spoken} {Dialogue}
+  {Understanding} {Beyond} {Words}.
+\newblock In \emph{Advances in {Neural} {Information} {Processing} {Systems} 37
+  ({NeurIPS} 2024) {Datasets} and {Benchmarks} {Track}}, 2024.
+\newblock URL
+  \url{https://proceedings.neurips.cc/paper_files/paper/2024/hash/681fe4ec554beabdc9c84a1780cd5a8a-Abstract-Datasets_and_Benchmarks_Track.html}.
+\newblock arXiv:2406.13340 [cs].
+
+\bibitem[Arora et~al.(2025)Arora, Lu, Chiu, Pang, and
+  Watanabe]{arora_talking_2025}
+Arora, S., Lu, Z., Chiu, C.-C., Pang, R., and Watanabe, S.
+\newblock Talking {Turns}: {Benchmarking} {Audio} {Foundation} {Models} on
+  {Turn}-{Taking} {Dynamics}.
+\newblock In \emph{The {Thirteenth} {International} {Conference} on {Learning}
+  {Representations} ({ICLR})}, 2025.
+\newblock URL \url{https://openreview.net/forum?id=2e4ECh0ikn}.
+\newblock arXiv:2503.01174 [cs].
+
+\bibitem[Barres et~al.(2025)Barres, Dong, Ray, Si, and
+  Narasimhan]{barres_2-bench_2025}
+Barres, V., Dong, H., Ray, S., Si, X., and Narasimhan, K.
+\newblock $\tau^2$-{Bench}: {Evaluating} {Conversational} {Agents} in a
+  {Dual}-{Control} {Environment}, June 2025.
+\newblock URL \url{http://arxiv.org/abs/2506.07982}.
+\newblock arXiv:2506.07982 [cs].
+
+\bibitem[Chen et~al.(2024)Chen, Yue, Zhang, Gao, Tan, and
+  Li]{chen_voicebench_2024}
+Chen, Y., Yue, X., Zhang, C., Gao, X., Tan, R.~T., and Li, H.
+\newblock {VoiceBench}: {Benchmarking} {LLM}-{Based} {Voice} {Assistants},
+  December 2024.
+\newblock URL \url{http://arxiv.org/abs/2410.17196}.
+\newblock arXiv:2410.17196 [cs].
+
+\bibitem[D{\'e}fossez et~al.(2024)D{\'e}fossez, Mazar{\'e}, Orsini, Royer,
+  P{\'e}rez, J{\'e}gou, Grave, and Zeghidour]{defossez_moshi_2024}
+D{\'e}fossez, A., Mazar{\'e}, L., Orsini, M., Royer, A., P{\'e}rez, P.,
+  J{\'e}gou, H., Grave, E., and Zeghidour, N.
+\newblock Moshi: a speech-text foundation model for real-time dialogue, 2024.
+\newblock URL \url{http://arxiv.org/abs/2410.00037}.
+\newblock arXiv:2410.00037 [eess]; Accessed March 2026.
+
+\bibitem[Fang et~al.(2025)Fang, Guo, Zhou, Ma, Zhang, and
+  Feng]{fang_llama-omni_2025}
+Fang, Q., Guo, S., Zhou, Y., Ma, Z., Zhang, S., and Feng, Y.
+\newblock {LLaMA}-{Omni}: {Seamless} {Speech} {Interaction} with {Large}
+  {Language} {Models}.
+\newblock In \emph{The {Thirteenth} {International} {Conference} on {Learning}
+  {Representations} ({ICLR})}, 2025.
+\newblock URL \url{https://openreview.net/forum?id=PYmrUQmMEw}.
+\newblock arXiv:2409.06666 [cs].
+
+\bibitem[{Gartner}(2024)]{gartner_conversational_ai_2024}
+{Gartner}.
+\newblock Gartner {Survey} {Reveals} 85\% of {Customer} {Service} {Leaders}
+  {Will} {Explore} or {Pilot} {Customer}-{Facing} {Conversational} {GenAI} in
+  2025, December 2024.
+\newblock URL
+  \url{https://www.gartner.com/en/newsroom/press-releases/2024-12-09-gartner-survey-reveals-85-percent-of-customer-service-leaders-will-explore-or-pilot-customer-facing-conversational-genai-in-2025}.
+
+\bibitem[{Gartner}(2025)]{gartner_agentic_ai_2025}
+{Gartner}.
+\newblock Gartner {Predicts} {Agentic} {AI} {Will} {Autonomously} {Resolve}
+  80\% of {Common} {Customer} {Service} {Issues} {Without} {Human}
+  {Intervention} by 2029, March 2025.
+\newblock URL
+  \url{https://www.gartner.com/en/newsroom/press-releases/2025-03-05-gartner-predicts-agentic-ai-will-autonomously-resolve-80-percent-of-common-customer-service-issues-without-human-intervention-by-20290}.
+
+\bibitem[Gosai et~al.(2025)Gosai, Vuong, Tyagi, Li, You, Bavare, Uçar, Fang,
+  Jang, Liu, and He]{gosai_audio_2025}
+Gosai, A., Vuong, T., Tyagi, U., Li, S., You, W., Bavare, M., Uçar, A., Fang,
+  Z., Jang, B., Liu, B., and He, Y.
+\newblock Audio {MultiChallenge}: {A} {Multi}-{Turn} {Evaluation} of {Spoken}
+  {Dialogue} {Systems} on {Natural} {Human} {Interaction}, December 2025.
+\newblock URL \url{http://arxiv.org/abs/2512.14865}.
+\newblock arXiv:2512.14865 [cs].
+
+\bibitem[Jain et~al.(2026)Jain, Shukla, Rajeev, Kulkarni, Khatri, and
+  Agarwal]{jain2026voiceagentbenchvoiceassistantsready}
+Jain, D., Shukla, H., Rajeev, G., Kulkarni, A., Khatri, C., and Agarwal, S.
+\newblock {VoiceAgentBench}: {Are} {Voice} {Assistants} ready for agentic
+  tasks?, 2026.
+\newblock URL \url{https://arxiv.org/abs/2510.07978}.
+
+\bibitem[Jiang et~al.(2026)Jiang, Lin, Liu, Xue, Bu, Du, Chen, Wang, and
+  Li]{jiang_s2s-arena_2025}
+Jiang, F., Lin, Z., Liu, Y., Xue, L., Bu, F., Du, Y., Chen, X., Wang, B., and
+  Li, H.
+\newblock {S2S}-{Arena}: {Evaluating} {Paralinguistic} {Instruction}
+  {Following} in {Speech}-to-{Speech} {Models}.
+\newblock In \emph{Proceedings of the 64th {Annual} {Meeting} of the
+  {Association} for {Computational} {Linguistics} ({ACL})}, 2026.
+\newblock URL \url{https://arxiv.org/abs/2503.05085}.
+\newblock To appear; arXiv:2503.05085 [cs].
+
+\bibitem[Li et~al.(2024)Li, Li, Zhang, Su, Yu, Piao, Qiao, Ma, Zhao, and
+  Yang]{li_cb-whisper_2024}
+Li, Y., Li, Y., Zhang, M., Su, C., Yu, J., Piao, M., Qiao, X., Ma, M., Zhao,
+  Y., and Yang, H.
+\newblock {CB}-{Whisper}: {Contextual} {Biasing} {Whisper} {Using}
+  {Open}-{Vocabulary} {Keyword}-{Spotting}.
+\newblock In Calzolari, N., Kan, M.-Y., Hoste, V., Lenci, A., Sakti, S., and
+  Xue, N. (eds.), \emph{Proceedings of the 2024 {Joint} {International}
+  {Conference} on {Computational} {Linguistics}, {Language} {Resources} and
+  {Evaluation} ({LREC}-{COLING} 2024)}, pp.\  2941--2946, Torino, Italia, May
+  2024. ELRA and ICCL.
+\newblock URL \url{https://aclanthology.org/2024.lrec-main.262/}.
+
+\bibitem[Lin et~al.(2025)Lin, Lian, Li, Wang, Anumanchipalli, Liu, and
+  Lee]{lin_full-duplex-bench_2025}
+Lin, G.-T., Lian, J., Li, T., Wang, Q., Anumanchipalli, G., Liu, A.~H., and
+  Lee, H.-y.
+\newblock Full-{Duplex}-{Bench}: {A} {Benchmark} to {Evaluate} {Full}-duplex
+  {Spoken} {Dialogue} {Models} on {Turn}-taking {Capabilities}.
+\newblock In \emph{2025 {IEEE} {Automatic} {Speech} {Recognition} and
+  {Understanding} {Workshop} ({ASRU})}. IEEE, 2025.
+\newblock \doi{10.1109/ASRU65441.2025.11433838}.
+\newblock URL \url{https://arxiv.org/abs/2503.04721}.
+\newblock arXiv:2503.04721 [cs].
+
+\bibitem[Lin et~al.(2026)Lin, Kuan, Shi, Chang, Arora, Watanabe, and
+  Lee]{lin_full-duplex-bench-v2_2025}
+Lin, G.-T., Kuan, S.-Y.~S., Shi, J., Chang, K.-W., Arora, S., Watanabe, S., and
+  Lee, H.-y.
+\newblock Full-{Duplex}-{Bench}-v2: {A} {Multi}-{Turn} {Evaluation} {Framework}
+  for {Duplex} {Dialogue} {Systems} with an {Automated} {Examiner}.
+\newblock In \emph{Proceedings of the 64th {Annual} {Meeting} of the
+  {Association} for {Computational} {Linguistics} ({ACL})}, 2026.
+\newblock URL \url{https://arxiv.org/abs/2510.07838}.
+\newblock To appear; arXiv:2510.07838 [eess].
+
+\bibitem[Liu et~al.(2026)Liu, Wang, Cheng, Liu, Li, Hou, Wu, Gu, Wang, and
+  Wang]{liu_vocalbench_2026}
+Liu, H., Wang, Y., Cheng, Z., Liu, H., Li, Y., Hou, Y., Wu, R., Gu, Q., Wang,
+  Y., and Wang, Y.
+\newblock {VocalBench}: {Benchmarking} the {Vocal} {Conversational} {Abilities}
+  for {Speech} {Interaction} {Models}, January 2026.
+\newblock URL \url{http://arxiv.org/abs/2505.15727}.
+\newblock arXiv:2505.15727 [cs].
+
+\bibitem[Moore(2025)]{moore_ai_voice_2025}
+Moore, O.
+\newblock {AI} {Voice} {Agents}: 2025 {Update}, January 2025.
+\newblock URL \url{https://a16z.com/ai-voice-agents-2025-update/}.
+
+\bibitem[{NVIDIA}(2026)]{nvidia_personaplex_2026}
+{NVIDIA}.
+\newblock {PersonaPlex}: {Voice} and {Role} {Control} for {Full} {Duplex}
+  {Conversational} {Speech} {Models}, 2026.
+\newblock URL \url{https://github.com/nvidia/personaplex}.
+\newblock Accessed March 2026.
+
+\bibitem[OpenAI(2025)]{openai_introducing_2025}
+OpenAI.
+\newblock Introducing gpt-realtime and {Realtime} {API} updates for production
+  voice agents, August 2025.
+\newblock URL \url{https://openai.com/index/introducing-gpt-realtime/}.
+
+\bibitem[{OpenBMB}(2026)]{openbmb_minicpm-o_2026}
+{OpenBMB}.
+\newblock {MiniCPM}-o 4.5: {Real}-{Time} {Full}-{Duplex} {Omni}-{Modal}
+  {Interaction}, 2026.
+\newblock URL \url{https://huggingface.co/openbmb/MiniCPM-o-4_5}.
+\newblock Accessed March 2026.
+
+\bibitem[{Qwen Team}(2025)]{qwen_omni_realtime_2025}
+{Qwen Team}.
+\newblock Qwen3-{Omni}: {Natively} {Omni}-{Modal} {Foundation} {Models}, 2025.
+\newblock URL \url{https://qwenlm.github.io/blog/qwen3-omni/}.
+\newblock Accessed March 2026.
+
+\bibitem[Si et~al.(2023)Si, Ma, Gao, Wu, Lin, Dai, Li, Yan, Huang, and
+  Li]{si_spokenwoz_2025}
+Si, S., Ma, W., Gao, H., Wu, Y., Lin, T.-E., Dai, Y., Li, H., Yan, R., Huang,
+  F., and Li, Y.
+\newblock {SpokenWOZ}: {A} {Large}-{Scale} {Speech}-{Text} {Benchmark} for
+  {Spoken} {Task}-{Oriented} {Dialogue} {Agents}.
+\newblock In \emph{Advances in {Neural} {Information} {Processing} {Systems} 36
+  ({NeurIPS} 2023) {Datasets} and {Benchmarks} {Track}}, 2023.
+\newblock URL
+  \url{https://proceedings.neurips.cc/paper_files/paper/2023/hash/7b16688a2b053a1b01474ab5c78ce662-Abstract-Datasets_and_Benchmarks.html}.
+\newblock arXiv:2305.13040 [cs].
+
+\bibitem[Vertex~AI(2025)]{vertex_ai_gemini_2025}
+Vertex~AI, G.~C.
+\newblock Gemini {Live} {API} available on {Vertex} {AI}, December 2025.
+\newblock URL
+  \url{https://cloud.google.com/blog/products/ai-machine-learning/gemini-live-api-available-on-vertex-ai}.
+
+\bibitem[Wang et~al.(2025{\natexlab{a}})Wang, Zou, Lin, Sun, Liu, Zhang, Liu,
+  Aw, and Chen]{wang_audiobench_2025}
+Wang, B., Zou, X., Lin, G., Sun, S., Liu, Z., Zhang, W., Liu, Z., Aw, A., and
+  Chen, N.~F.
+\newblock {AudioBench}: {A} {Universal} {Benchmark} for {Audio} {Large}
+  {Language} {Models}.
+\newblock In Chiruzzo, L., Ritter, A., and Wang, L. (eds.), \emph{Proceedings
+  of the 2025 {Conference} of the {Nations} of the {Americas} {Chapter} of the
+  {Association} for {Computational} {Linguistics}: {Human} {Language}
+  {Technologies} ({Volume} 1: {Long} {Papers})}, pp.\  4297--4316, Albuquerque,
+  New Mexico, April 2025{\natexlab{a}}. Association for Computational
+  Linguistics.
+\newblock \doi{10.18653/v1/2025.naacl-long.218}.
+\newblock URL \url{https://aclanthology.org/2025.naacl-long.218/}.
+
+\bibitem[Wang et~al.(2025{\natexlab{b}})Wang, Meng, Cui, Zhang, Wu, Wu, King,
+  Chen, and Zhao]{wang_ntpp_2025}
+Wang, Q., Meng, Z., Cui, W., Zhang, Y., Wu, P., Wu, B., King, I., Chen, L., and
+  Zhao, P.
+\newblock {NTPP}: {Generative} {Speech} {Language} {Modeling} for
+  {Dual}-{Channel} {Spoken} {Dialogue} via {Next}-{Token}-{Pair} {Prediction}.
+\newblock In \emph{Proceedings of the 42nd {International} {Conference} on
+  {Machine} {Learning} ({ICML})}, 2025{\natexlab{b}}.
+\newblock URL \url{https://arxiv.org/abs/2506.00975}.
+\newblock arXiv:2506.00975 [cs].
+
+\bibitem[{xAI}(2025)]{xai_grok_voice_2025}
+{xAI}.
+\newblock Grok {Voice} {Agent} {API}, December 2025.
+\newblock URL \url{https://x.ai/news/grok-voice-agent-api}.
+
+\bibitem[Yang et~al.(2026)Yang, Tu, Liu, Qu, Lee, Lu, Wang, and
+  Wu]{yang_paras2s_2025}
+Yang, S.-w., Tu, M., Liu, A.~T., Qu, X., Lee, H.-y., Lu, L., Wang, Y., and Wu,
+  Y.
+\newblock {ParaS2S}: {Benchmarking} and {Aligning} {Spoken} {Language} {Models}
+  for {Paralinguistic}-aware {Speech}-to-{Speech} {Interaction}.
+\newblock In \emph{The {Fourteenth} {International} {Conference} on {Learning}
+  {Representations} ({ICLR})}, 2026.
+\newblock URL \url{https://openreview.net/forum?id=CcmDDh070o}.
+\newblock arXiv:2511.08723 [eess].
+
+\bibitem[Yao et~al.(2025)Yao, Shinn, Razavi, and Narasimhan]{yao_-bench_2024}
+Yao, S., Shinn, N., Razavi, P., and Narasimhan, K.
+\newblock $\tau$-bench: {A} {Benchmark} for {Tool}-{Agent}-{User} {Interaction}
+  in {Real}-{World} {Domains}.
+\newblock In \emph{The {Thirteenth} {International} {Conference} on {Learning}
+  {Representations} ({ICLR})}, 2025.
+\newblock URL \url{https://openreview.net/forum?id=roNSXZpUDN}.
+\newblock arXiv:2406.12045 [cs].
+
+\bibitem[Yu et~al.(2025)Yu, Wang, Yang, Chen, Tian, Zhang, Sun, Lu, Wang, and
+  Zhang]{yu_salmonn-omni_2025}
+Yu, W., Wang, S., Yang, X., Chen, X., Tian, X., Zhang, J., Sun, G., Lu, L.,
+  Wang, Y., and Zhang, C.
+\newblock {SALMONN}-omni: {A} {Standalone} {Speech} {LLM} without {Codec}
+  {Injection} for {Full}-duplex {Conversation}.
+\newblock In \emph{Advances in {Neural} {Information} {Processing} {Systems} 38
+  ({NeurIPS} 2025)}, 2025.
+\newblock URL \url{https://openreview.net/forum?id=AsRB5nmlOD}.
+\newblock arXiv:2505.17060 [cs].
+
+\bibitem[Zhang et~al.(2025)Zhang, Zhang, Lei, Wu, Liu, Jia, and
+  Zhou]{zhang_wildspeech-bench_2025}
+Zhang, L., Zhang, J., Lei, B., Wu, C., Liu, A., Jia, W., and Zhou, X.
+\newblock {WildSpeech}-{Bench}: {Benchmarking} {End}-to-{End} {SpeechLLMs} in
+  the {Wild}, September 2025.
+\newblock URL \url{http://arxiv.org/abs/2506.21875}.
+\newblock arXiv:2506.21875 [cs].
+
+\end{thebibliography}
