@@ -1,0 +1,50 @@
+\subsection{Evaluation}
+
+Voice evaluation requires capturing both task outcomes and conversational behavior. We instrument each simulation to log turn-taking events, audio effects, and agent responses, then derive metrics for task success and voice interaction quality.
+
+\begin{table}[ht]
+\caption{Key moments from the Task 41 trajectory (Figure~\ref{fig:speech-timeline}). At 8s, the agent interrupts; at 68s the user interrupts and the agent yields but fails to respond for 5 seconds; at 82s the agent incorrectly responds to non-agent-directed speech [in brackets]; at 113s the user interrupts but the agent does not yield; at 121s the agent correctly continues through a backchannel.}
+\label{tab:tick-example}
+\centering
+\scriptsize
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}rlll@{}}
+\toprule
+\textbf{Time} & \textbf{User} & \textbf{Agent} & \textbf{Event} \\
+\midrule
+5--8s & Hi, I have two prob- & & \\
+8s & -lems. First, I ordered & Hello! & \textit{agent int.} \\
+\addlinespace
+\multicolumn{4}{c}{\ldots} \\
+\addlinespace
+60--67s & & ...Which would you like & \\
+67--68s & & to do first? & \\
+68--69s & Jigsaw first. & & \textit{user int., yield} \\
+69--74s & & & \textit{no response} \\
+74--77s & Can you switch it... & & \\
+\addlinespace
+\multicolumn{4}{c}{\ldots} \\
+\addlinespace
+77--82s & & To confirm, you want to & \\
+82s & [Give me a moment.] & exchange the puzzle-- & \textit{non-dir., yield} \\
+84s & & Sure, take your time. & \textit{error: responds} \\
+\addlinespace
+\multicolumn{4}{c}{\ldots} \\
+\addlinespace
+108--113s & & ...on order \#W4082615. Is & \\
+113--114s & Yeah, that's it. & that the one? We can exch- & \textit{user int.} \\
+114--115s & & -ange it for a puzzle... & \textit{no yield} \\
+\addlinespace
+\multicolumn{4}{c}{\ldots} \\
+\addlinespace
+115--121s & & ...500-piece puzzles. Wo- & \\
+121--122s & mm-hmm & -uld you like to exchange & \textit{backchannel} \\
+122--128s & & it for one of those? & \textit{continues} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\input{contents/methods/timeline_walkthrough}
+
+\paragraph{Metrics.} We evaluate both \textit{task success} (pass@1, following \tautwobench{}: comparing final database state against annotated goals, plus verifying agent communications---for which we use LLM evaluation instead of string matching to handle spoken output variability) and \textit{voice interaction quality} across four dimensions: responsiveness, latency, interrupt rate, and selectivity. We also manually review a sample of failures to categorize error sources across the user and agent (\S\ref{sec:results}).

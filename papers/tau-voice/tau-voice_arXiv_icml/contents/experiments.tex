@@ -1,0 +1,66 @@
+\section{Experimental Setup}
+\label{sec:experiments}
+
+\subsection{Domains and Tasks}
+
+We adapt the three  domains from \tautwobench{}, totaling 278 tasks, by adding voice-specific user-side instructions; this enables direct apples-to-apples comparison with text agents on the same tasks:
+\begin{itemize}[nosep,leftmargin=*]
+    \item \textbf{Retail} (114 tasks): Returns, exchanges, cancellations, and order modifications---often combined in a single conversation. Many tasks require handling ambiguous requests or customers who change their mind mid-conversation.
+    \item \textbf{Airline} (50 tasks): Flight changes, cancellations, seat upgrades, and booking modifications requiring verification of passenger details and fare rules.
+    \item \textbf{Telecom} (114 tasks): Plan changes, billing inquiries, service activations, and account modifications involving authentication and policy verification.
+\end{itemize}
+We designate \textbf{Retail as the primary evaluation domain} due to its heavy reliance on slot filling---collecting names, emails, order IDs, and addresses---where end-to-end speech systems are known to struggle~\citep{li_cb-whisper_2024, si_spokenwoz_2025}. Airline and Telecom serve as supporting domains to test generalization.
+
+\subsection{Models}
+
+We evaluate three audio-native providers, released between late 2025 and early 2026. Because \tauvoice{} is an agentic benchmark, inclusion requires both realtime full-duplex audio \emph{and} native tool calling. The broader set of audio-native models we surveyed and the criteria each fails is listed in Appendix~\ref{app:audio-native-audit}.%
+
+\begin{table}[h]
+\caption{Audio-native models evaluated; the Alias column shows the short form used in results tables.}
+\label{tab:models}
+\centering
+\begin{small}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{llll}
+\toprule
+\textbf{Provider} & \textbf{Model} & \textbf{Release} & {\color{red!75!black}\textbf{Alias}} \\
+\midrule
+OpenAI & \texttt{gpt-realtime-1.5} & Feb 2026 & {\color{red!75!black}\texttt{gpt-realtime-1.5}} \\
+Google & \texttt{gemini-live-2.5-flash-native-audio} & Dec 2025 & {\color{red!75!black}\texttt{gemini-live-2.5}} \\
+xAI & \texttt{grok-voice-agent} & Dec 2025 & {\color{red!75!black}\texttt{grok-voice}} \\
+\bottomrule
+\end{tabular}%
+}
+\end{small}
+\end{table}
+
+All models receive identical system prompts with voice-specific guidance: when collecting names, emails, or IDs, ask customers to spell letter-by-letter; if authentication fails, explicitly request spelling again.
+
+\subsection{Evaluation Conditions}
+
+We evaluate each model under two speech complexity conditions:
+
+\input{results/conditions_table}
+
+\textbf{Clean} simulates an idealized telephony scenario: clear American-accented speech with no background noise or user interruptions. \textbf{Realistic} reflects realistic phone interactions: diverse speaker accents, environmental noise (indoor/outdoor backgrounds, burst sounds), channel degradation (frame drops, muffling), and natural turn-taking behaviors (interruptions, backchanneling, vocal tics, non-directed speech). To isolate the contribution of each factor, we also evaluate intermediate ablation conditions adding noise, accents, or turn-taking independently (Table~\ref{tab:conditions-ablation-single}).
+
+\input{results/conditions_ablation_table_single}
+
+This 3$\times$3$\times$2 design (3 models $\times$ 3 domains $\times$ 2 conditions) isolates the impact of acoustic realism on task completion. Ablation conditions are evaluated on the Retail domain to identify which factors contribute most to performance degradation.
+
+\subsection{Simulation Parameters}
+
+Each task runs with a fixed seed for reproducible effect scheduling (noise timing, frame drops), though LLM responses remain non-deterministic. Reproducibility refers to controlled inputs and deterministic non-LLM components; stochasticity arises from agent and simulator LLMs. Key parameters: tick duration 200ms, max conversation 1200s, user simulator LLM GPT-4.1, TTS via ElevenLabs v3 at 24kHz, interruption and backchannel check every 2s.
+
+\subsection{Metrics}
+
+\textbf{Task Completion:} Following \tautwobench{}, tasks are fully verifiable: success is deterministically evaluated by comparing the end state of the environment (e.g., database records) against a gold standard. We report pass@1---the proportion of tasks completed successfully on a single attempt.
+
+\textbf{Voice Interaction Quality:} Beyond task completion, we evaluate how well agents manage real-time conversation. Effective turn-taking requires \textit{responsiveness} (acting when action is needed), \textit{latency} (reacting quickly), \textit{not interrupting} (good timing), and \textit{selectivity} (ignoring backchannels and non-directed speech). We measure:
+\begin{itemize}[nosep,leftmargin=*]
+    \item \textbf{Responsiveness:} Response Rate ($R_R$, proportion of user turns receiving a response) and Yield Rate ($R_Y$, proportion of interruptions where agent yields within 2s).
+    \item \textbf{Latency:} Response Latency ($L_R$, time from user utterance end to agent response) and Yield Latency ($L_Y$, time to stop speaking after interruption).
+    \item \textbf{Interrupt:} Agent Interruption Rate ($I_A$, proportion of turns where agent speaks before user finishes; $>$100\% means multiple interruptions per turn).
+    \item \textbf{Selectivity:} Correctly ignoring backchannels ($S_{BC}$), vocal tics ($S_{VT}$), and non-directed speech ($S_{ND}$).
+\end{itemize}
+We report four aggregate scores: \textbf{Responsiveness} $= \mathrm{avg}(R_R, R_Y)$, \textbf{Latency} $= \mathrm{avg}(L_R, L_Y)$, \textbf{Interrupt} $= I_A$, and \textbf{Selectivity} $= \mathrm{avg}(S_{BC}, S_{VT}, S_{ND})$. See Appendix~\ref{app:voice-metrics} for detailed definitions.

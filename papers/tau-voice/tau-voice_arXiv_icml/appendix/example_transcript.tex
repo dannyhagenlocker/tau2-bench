@@ -1,0 +1,224 @@
+\subsection{Conversation Transcript}
+\label{app:example-transcript}
+
+The following table shows the tick-by-tick conversation for Task 41 (200ms per tick). This conversation is visualized in the speech activity timeline (Figure~\ref{fig:speech-timeline}). The corresponding audio recording is available in the supplementary materials.
+
+\paragraph{Color Key.}
+\textcolor{red}{Agent error} (agent-int, no-response, no-yield, non-dir error) $\bullet$
+\textcolor{teal}{User interrupt} $\bullet$
+\textcolor{green!50!black}{Backchannel} $\bullet$
+\textcolor{blue}{Frame drop} $\bullet$
+\textcolor{orange}{Burst noise} $\bullet$
+\textcolor{purple}{Muffled} $\bullet$
+\textcolor{gray}{Vocal tic/aside}
+
+\begin{scriptsize}
+\begin{longtable}{p{1.4cm}|p{4cm}|p{4cm}|p{2.5cm}|p{2.5cm}}
+\toprule
+\textbf{Ticks} \newline \textbf{(Time)} & \textbf{Agent} & \textbf{User} & \textbf{Tool Calls} & \textbf{Events} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Ticks} \newline \textbf{(Time)} & \textbf{Agent} & \textbf{User} & \textbf{Tool Calls} & \textbf{Events} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{5}{r}{\textit{Continued on next page...}} \\
+\endfoot
+\bottomrule
+\endlastfoot
+
+0--25 \newline 0:00--0:05 & Hi! How can I help you today? & --- & --- & wait: Silence (x26) \\
+\addlinespace
+
+26--111 \newline 0:05--0:22 & Hello! I can help & Hi, I have two problems. First, I ordered a 1000-piece intermediate jigsaw, but I think it's too hard for my kid---can I switch it to the easiest one with the fewest pieces? Second, I might have typed my address wrong. I want to check and maybe fix the address. & --- & generate\_message \newline keep\_talking (x70) \newline \textcolor{blue}{[frame-drop tick 30]} \newline \textcolor{red}{[agent-int 8.0s, 18.8s]} \\
+\addlinespace
+
+112 \newline 0:22 & --- & --- & find\_user\_id\_by\_email \newline \textcolor{red}{Error: User not found} & keep\_talking \\
+\addlinespace
+
+113--119 \newline 0:22--0:23 & I'd be happy to help wi & --- & --- & keep\_talking (x7) \newline \textcolor{blue}{[frame-drop tick 117]} \newline \textcolor{red}{[agent-int 23.0s]} \\
+\addlinespace
+
+120 \newline 0:24 & th & --- & --- & stop\_talking \\
+\addlinespace
+
+121--168 \newline 0:24--0:33 & both of those issues. First, I need to authenticate you. I tried using pat.doe@example.com, but it wasn't found. Can you provide me with your email address spelled out, or your f & \textcolor{gray}{[sneezes] (vocal tic)} & --- & wait: Listening (x48) \newline \textcolor{blue}{[frame-drop tick 149]} \newline \textcolor{gray}{[vocal-tic tick 165]} \\
+\addlinespace
+
+169--178 \newline 0:33--0:35 & irst and last name and zip code? spel & I don't remember my email. & --- & \textcolor{teal}{interrupt} \newline \textcolor{purple}{[muffled]} \newline \textcolor{red}{[no-yield]} \\
+\addlinespace
+
+179--208 \newline 0:35--0:41 & led out, please? No problem. Could you provide me with your first and last name and your zip code, spelling them out for me? & --- & --- & wait: Listening (x30) \newline \textcolor{orange}{[burst-noise tick 191: car horn]} \\
+\addlinespace
+
+209--232 \newline 0:41--0:46 & M E I, got i & Yeah. First name: M, E, I. Last name: P & --- & \textcolor{teal}{interrupt} \newline keep\_talking (x23) \newline \textcolor{red}{[agent-int 45.6s]} \\
+\addlinespace
+
+233 \newline 0:46 & t. & --- & --- & stop\_talking \\
+\addlinespace
+
+234--264 \newline 0:46--0:52 & AnP, okay. And the rest of your last name? & --- & --- & wait: Listening (x16) \newline wait: Silence (x15) \newline \textcolor{blue}{[frame-drop tick 257]} \newline \textcolor{orange}{[burst-noise tick 259: engine]} \\
+\addlinespace
+
+265--292 \newline 0:53--0:58 & --- & A, T, E, L. Zip code: seven, six, one, six, five. & --- & generate\_message \newline keep\_talking (x27) \\
+\addlinespace
+
+293--300 \newline 0:58--1:00 & --- & --- & --- & wait: Silence (x8) \\
+\addlinespace
+
+301 \newline 1:00 & --- & --- & find\_user\_id\_by\_name\_zip \newline $\rightarrow$ mei\_patel\_7272 & wait: Silence \newline \textcolor{orange}{[burst-noise: car horn]} \\
+\addlinespace
+
+302--338 \newline 1:00--1:07 & Thank you, I've found your account. I can help you with the jigsaw puzzle exchange and checking your address. Which would you like to do fir & --- & --- & wait: Silence (x3) \newline wait: Listening (x34) \newline \textcolor{blue}{[frame-drop tick 325]} \\
+\addlinespace
+
+339--345 \newline 1:07--1:09 & st? & Jigsaw first. & --- & \textcolor{teal}{interrupt} \newline keep\_talking (x6) \newline \textcolor{blue}{[frame-drop tick 339]} \\
+\addlinespace
+
+346--371 \newline 1:09--1:14 & --- & --- & --- & wait: Silence (x26) \newline \textcolor{red}{[no-response]} \\
+\addlinespace
+
+372--384 \newline 1:14--1:16 & --- & Can you switch it to the easiest puzzle? & --- & generate\_message \newline keep\_talking (x12) \newline \textcolor{purple}{[muffled]} \\
+\addlinespace
+
+385--421 \newline 1:17--1:24 & To confirm, you want to exchange the 1000-piece puzzle for one with fewer pieces? & \textcolor{gray}{``Give me a moment.'' (non-directed)} & --- & wait: Silence (x9) \newline wait: Listening (x23) \newline wait: Silence (x5) \newline \textcolor{gray}{[aside tick 412]} \newline \textcolor{red}{[non-dir error]} \\
+\addlinespace
+
+422--426 \newline 1:24--1:25 & Sure, take your & Yes, the one wi & --- & \textcolor{teal}{interrupt} \newline keep\_talking (x4) \newline \textcolor{red}{[agent-int 84.4s]} \\
+\addlinespace
+
+427 \newline 1:25 & ti & --- & --- & stop\_talking \\
+\addlinespace
+
+428--468 \newline 1:25--1:33 & me. Great. Do you know the item ID for the puzzle you want to exchange from, and & --- & --- & wait: Listening (x3) \newline wait: Silence (x19) \newline wait: Listening (x19) \newline \textcolor{blue}{[frame-drop tick 460]} \\
+\addlinespace
+
+469--480 \newline 1:33--1:36 & the new item ID? & No, I don't know the item ID. & --- & \textcolor{teal}{interrupt} \newline keep\_talking (x11) \\
+\addlinespace
+
+481--511 \newline 1:36--1:42 & No problem. Could you tell me the specific name of the puzzle you ordered? & --- & --- & wait: Silence (x6) \newline wait: Listening (x20) \newline wait: Silence (x5) \\
+\addlinespace
+
+512--533 \newline 1:42--1:46 & --- & I just remember it's the 1000-piece intermediate jigsaw. & --- & generate\_message \newline keep\_talking (x21) \\
+\addlinespace
+
+534--540 \newline 1:46--1:48 & --- & --- & get\_user\_details \newline get\_order\_details (x2) & wait: Silence (x7) \\
+\addlinespace
+
+541--568 \newline 1:48--1:53 & I found a 1000-piece ``intermediate'' jigsaw puzzle on order \#W4082615. Is that the one & --- & --- & wait: Silence (x2) \newline wait: Listening (x26) \\
+\addlinespace
+
+569--572 \newline 1:53--1:54 & ? We can exch & Yeah, that's it. & --- & \textcolor{teal}{interrupt} \newline keep\_talking (x3) \newline \textcolor{red}{[no-yield]} \\
+\addlinespace
+
+573--576 \newline 1:54--1:55 & ange it for a & --- & --- & wait: Listening (x4) \\
+\addlinespace
+
+577 \newline 1:55 & zzl & --- & get\_product\_details & wait: Listening \\
+\addlinespace
+
+578--608 \newline 1:55--2:01 & e with fewer pieces. The puzzle you have is 1000 pieces. The available options with fewer pieces are 500-piece puzzles & --- & --- & wait: Listening (x31) \\
+\addlinespace
+
+609 \newline 2:01 & . Wo & m & --- & \textcolor{green!50!black}{backchannel} \\
+\addlinespace
+
+610--614 \newline 2:02--2:02 & uld you like to exch & m-hmm & --- & \textcolor{green!50!black}{backchannel (x5)} \\
+\addlinespace
+
+615--640 \newline 2:03--2:08 & ange it for one of those? & --- & --- & wait: Listening (x8) \newline wait: Silence (x18) \\
+\addlinespace
+
+641--648 \newline 2:08--2:09 & --- & Yes, please. & --- & generate\_message \newline keep\_talking (x7) \newline \textcolor{purple}{[muffled]} \\
+\addlinespace
+
+649--674 \newline 2:09--2:14 & --- & --- & --- & wait: Silence (x26) \newline \textcolor{blue}{[frame-drop tick 656]} \newline \textcolor{red}{[no-response]} \\
+\addlinespace
+
+675--684 \newline 2:15--2:16 & --- & Now, can we check my address? & --- & generate\_message \newline keep\_talking (x9) \newline \textcolor{blue}{[frame-drop tick 678]} \\
+\addlinespace
+
+685--728 \newline 2:17--2:25 & Sure. The address on file is 443 Maple Drive, Suite 394, Fort Worth, TX 76165. Is that co & --- & --- & wait: Silence (x7) \newline wait: Listening (x37) \\
+\addlinespace
+
+729--746 \newline 2:25--2:29 & rrect? & No, it should be four, four, five, Maple Drive. & --- & \textcolor{teal}{interrupt} \newline keep\_talking (x17) \newline \textcolor{blue}{[frame-drop tick 739]} \\
+\addlinespace
+
+747--752 \newline 2:29--2:30 & --- & --- & --- & wait: Silence (x6) \\
+\addlinespace
+
+753 \newline 2:30 & --- & --- & modify\_user\_address \newline $\rightarrow$ success & wait: Silence \\
+\addlinespace
+
+754--778 \newline 2:30--2:35 & Your address has been updated to 445 Maple Drive, Suite 394. Is there anything else I can h & --- & --- & wait: Silence (x2) \newline wait: Listening (x23) \newline \textcolor{blue}{[frame-drop tick 771]} \\
+\addlinespace
+
+779--795 \newline 2:35--2:39 & elp you with today? & Can you make sure all my orders use that address too? & --- & \textcolor{teal}{interrupt} \newline keep\_talking (x16) \\
+\addlinespace
+
+796--850 \newline 2:39--2:50 & I can only modify the address for pending orders. Order \#W4082615 is pending, so I can update that one for you. Would you like me to proceed with that? & --- & --- & wait: Silence (x6) \newline wait: Listening (x44) \newline wait: Silence (x5) \newline \textcolor{orange}{[burst-noise tick 801: car horn]} \newline \textcolor{blue}{[frame-drop tick 809]} \\
+\addlinespace
+
+851--857 \newline 2:50--2:51 & --- & Yes, update it. & --- & generate\_message \newline keep\_talking (x6) \\
+\addlinespace
+
+858--896 \newline 2:51--2:59 & The shipping address for order \#W4082615 has been updated. Is there anything else I can help you with? & --- & --- & wait: Silence (x5) \newline wait: Listening (x29) \newline wait: Silence (x5) \\
+\addlinespace
+
+897 \newline 2:59 & --- & No, that's all. Thanks. & --- & generate\_message \\
+
+\end{longtable}
+\end{scriptsize}
+
+\subsection{Event Summary}
+
+Table~\ref{tab:event-summary} summarizes the conversational events and audio effects in this task.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrl}
+\toprule
+\textbf{Event Type} & \textbf{Count} & \textbf{Notes} \\
+\midrule
+User utterances & 17 & \\
+Agent utterances & 15 & \\
+User interruptions & 8 & Callback decided to interrupt \\
+Agent interruptions & 2 & ``Hello!'' and ``I can help'' during user opening \\
+Backchannels & 1 & ``mm-hmm'' at tick 609 \\
+\midrule
+Frame drops & 12 & 150ms each (ticks 30, 117, 149, 257, 325, 339, 460, 656, 678, 739, 771, 809) \\
+Burst noise & 4 & Car horn (ticks 191, 301, 801), engine idling (tick 259) \\
+Dynamic muffling & 3 & Ticks 169--179, 372--385, 641--649 \\
+Speech inserts & 2 & Sneezes (tick 165), aside (tick 412) \\
+\midrule
+Agent errors & 3 & Hallucinated email, no-response gap, incomplete exchange \\
+\bottomrule
+\end{tabular}
+\caption{Event summary for Task 41 conversation.}
+\label{tab:event-summary}
+\end{table}
+
+\subsection{Technical Details}
+
+Table~\ref{tab:technical-details} shows the technical parameters for this simulation.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{ll}
+\toprule
+\textbf{Property} & \textbf{Value} \\
+\midrule
+Total duration & 179.6 seconds (898 ticks at 200ms each) \\
+Simulation ID & 39ee01bf-37ff-4330-90c2-d15f9a940de0 \\
+Voice persona & wei\_lin \\
+Environment & outdoor (busy\_street\_iphone\_mic.wav) \\
+Burst noise files & car\_horn.wav, engine\_idling.wav, siren.wav \\
+Telephony & G.711 $\mu$-law 8kHz \\
+\bottomrule
+\end{tabular}
+\caption{Technical parameters for the Task 41 simulation.}
+\label{tab:technical-details}
+\end{table}

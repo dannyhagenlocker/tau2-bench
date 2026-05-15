@@ -1,0 +1,48 @@
+\section{Introduction}
+\label{sec:intro}
+
+The next frontier in conversational AI is \textbf{full-duplex voice interaction}---natural spoken conversations where systems listen and speak simultaneously, handle interruptions gracefully, and make real-time turn-taking decisions~\citep{gartner_conversational_ai_2024, gartner_agentic_ai_2025, moore_ai_voice_2025}. Unlike turn-based interactions where users speak, wait, and speak again, full-duplex systems operate in continuous time without explicit turn boundaries.
+
+A new generation of \textbf{audio-native language models} enables this vision, processing speech end-to-end without intermediate transcription. Customer service is a primary application: voice remains the preferred channel for complex issues where customers need to explain nuanced problems or resolve urgent matters.
+
+Existing work evaluates whether these models can hold a conversation---but can they \textit{simultaneously} process a return, modify an order, or resolve a billing dispute, with the reliability we expect from text-based agents?
+
+\subsection{Why End-to-End Evaluation Matters}
+
+Voice agents must excel at two capabilities: \textbf{task completion} (reasoning about requests, calling tools correctly, modifying database state) and \textbf{conversation management} (turn-taking, interruptions, backchanneling in continuous time). Existing benchmarks evaluate each in isolation: \taubench{} and \tautwobench{}~\citep{yao_-bench_2024, barres_2-bench_2025} measure tool use on realistic customer service tasks but in text-only, turn-based settings; Full-Duplex-Bench and its v2~\citep{lin_full-duplex-bench_2025, lin_full-duplex-bench-v2_2025} evaluate turn-taking and interruptions but on synthetic tasks without real tool calls (\S\ref{sec:related}). What remains unexplored is evaluating both together: voice interaction grounded in consequential tasks.
+
+Voice compounds task difficulty in ways text does not. Speech lacks punctuation, contains fillers and disfluencies, and requires verbally encoding special characters. The \textit{audio environment} (background noise, accents, telephony compression) introduces errors that propagate across turns. Real-time \textit{conversational dynamics} (interruptions, backchannels, turn-taking) demand that agents respond fluidly without long silences.
+
+Consider:
+
+\begin{quote}
+\textit{A customer calls to make changes to their account. Due to background noise and an unfamiliar accent, the agent mishears their name and authentication fails. Does the agent ask them to spell it? If the customer spells it out, does the agent transcribe it correctly despite the noise? If so, does it fix the authentication tool call---or does it make a mistake in combining the information spread across the turns?}
+\end{quote}
+
+Such failures cannot be captured by evaluating ASR, dialogue state tracking, and tool use separately. They also pose \textbf{accessibility concerns}: users with non-standard accents, speech impediments, or noisy environments may be systematically underserved by voice agents that perform well only under ideal conditions.
+
+\subsection{Our Contributions}
+
+We present \textbf{\tauvoice{}}, extending \tautwobench{} to full-duplex voice interaction under controlled audio conditions:
+
+\begin{enumerate}
+    \item \textbf{A voice agent benchmark combining verifiable completion of complex grounded tasks, full-duplex interaction, and realistic audio.} Existing benchmarks evaluate these dimensions in isolation (\S\ref{sec:related}). \tauvoice{} is the first to combine all three and enables direct comparison between voice and text agent performance on grounded tasks. Code is available at \url{https://github.com/sierra-research/tau2-bench}.
+    
+    \item \textbf{Controllable and realistic voice user simulator.} A voice user simulator with diverse accents, realistic audio environments, and rich turn-taking dynamics. By decoupling simulation time from wall-clock time, our user simulator can use the most capable LLM without real-time constraints, ensuring reliable instruction following and turn-taking decisions.
+    
+    \item \textbf{Empirical findings.} We benchmark \texttt{gemini-live-2.5}, \texttt{gpt-realtime-1.5}, and \texttt{grok-voice}, ablating acoustic factors (noise, accents, turn-taking). Figure~\ref{fig:headline} summarizes our headline result:
+    \begin{itemize}[nosep,leftmargin=1em]
+        \item \textit{A large voice-text gap remains}: Even under Clean conditions (clean audio, no interruptions), voice agents achieve only 31--51\% vs 85\% GPT-5 (reasoning)---a 34--54pp gap.
+        \item \textit{Realistic audio exacerbates the gap}: Under Realistic conditions (noise, accents, turn-taking), performance falls further to 26--38\%, retaining only 30--45\% of text SOTA capability. Accents are the most damaging factor but highly model-specific: Grok loses 38\% of its Clean capability while Gemini is nearly unaffected, with potential accessibility implications.
+        \item \textit{Model trade-offs}: Gemini is most robust to degradation (loses 17\% of its Clean performance vs.\ 24--28\% for others). GPT-realtime achieves fastest latency (0.90s) and near-perfect responsiveness (100\%) but worst selectivity (6\%); Grok leads slightly in task completion (51\% Clean, 38\% Realistic) but has the highest interrupt rate (84\%). No model masters both task completion and conversational dynamics.
+        \item \textit{Failures are primarily agent errors}: Qualitative analysis of 91 failed simulations confirms that 79--90\% of failures stem from agent behavior, suggesting that observed failures primarily reflect agent behavior under our evaluation setup.
+    \end{itemize}
+Voice agents have nearly closed the gap to non-reasoning text models under ideal conditions, yet under realistic conditions they still fall short of even that baseline. Ultimately, the goal is for voice agents to match our best text models, and that will require sustaining fluid conversation while reasoning over multi-step tasks in real time---a constraint that text agents, which can think silently for as long as needed, do not face.
+\end{enumerate}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\columnwidth]{results/pass_1_headline_simple.pdf}
+\caption{Task completion (pass@1) averaged across all domains. GPT-5 (reasoning) achieves 85\%. Voice agents show two levels of degradation: under \textbf{Clean} conditions (clean audio, no interruptions), performance drops to 31--51\% ($-$34 to $-$54pp); under \textbf{Realistic} conditions (realistic audio, interruptions), it falls further to 26--38\% (retaining only 30--45\% of text capability).}
+\label{fig:headline}
+\end{figure}

@@ -1,0 +1,62 @@
+\section{Audio Effects Configuration}
+\label{app:audio-effects}
+
+This section details the audio effects applied to user speech in the Realistic complexity preset (Section~\ref{sec:experiments}). These effects are demonstrated in the example conversation (Appendix~\ref{app:example-transcript}), which includes frame drops, burst noise, muffling, and non-directed speech events.
+
+\subsection{Environment Presets}
+
+Environment presets define coherent combinations of background and burst noise files. One background noise file is selected per task; all burst noise files for the environment are available. Table~\ref{tab:environment-presets} shows the available environments.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{Environment} & \textbf{Background Noise} & \textbf{Burst Noise} \\
+\midrule
+Indoor & People Talking, TV News & Ringing Phone, Dog Bark \\
+Outdoor & Busy Street, Street \& Metro & Car Horn, Engine Idling, Siren \\
+\bottomrule
+\end{tabular}
+\caption{Environment presets define which audio files are used for background and burst noise generation.}
+\label{tab:environment-presets}
+\end{table}
+
+\subsection{Effect Scheduling}
+
+Table~\ref{tab:effect-scheduling} shows the scheduling parameters for each audio effect type.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{Effect} & \textbf{Scheduling} & \textbf{Rate (Realistic Preset)} \\
+\midrule
+Burst noise & Poisson process & 1.0 events/min \\
+Out-of-turn speech (phrases, vocal tics) & Poisson process & 0.7 events/min \\
+Frame drops & Gilbert-Elliott model & 2\% avg loss rate, 100ms burst \\
+Dynamic muffling & Per-utterance probability & 20\% of utterances \\
+\bottomrule
+\end{tabular}
+\caption{Effect scheduling parameters for the Realistic complexity preset.}
+\label{tab:effect-scheduling}
+\end{table}
+
+\paragraph{Out-of-Turn Speech.} Includes both non-directed phrases (e.g., ``Hold on a second,'' ``I'm on the phone,'' ``Give me a moment'') and vocal tics (coughs, sneezes, sniffles). These test the agent's ability to distinguish speech directed at it from background sounds.
+
+\subsection{Gilbert-Elliott Model for Frame Drops}
+
+Two-state Markov model for realistic bursty packet loss:
+\begin{itemize}
+    \item \textbf{Good state}: No packet loss ($k=0$)
+    \item \textbf{Bad state}: 20\% loss probability ($h=0.2$)
+    \item Transition rates derived from target loss rate and average burst duration
+    \item Each frame drop event removes 150ms of audio
+\end{itemize}
+
+\subsection{Audio Mixing}
+
+All audio streams are mixed using SNR-based normalization:
+\begin{itemize}
+    \item Background noise: 15 dB SNR (with $\pm$3 dB drift)
+    \item Burst noise: sampled from $-5$ to $+10$ dB SNR per event
+\end{itemize}

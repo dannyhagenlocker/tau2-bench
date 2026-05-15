@@ -1,0 +1,131 @@
+\subsection{Task Overview}
+\label{app:example-task}
+
+This example uses Task 41 from the Retail domain, the same task shown in the speech activity timeline (Figure~\ref{fig:speech-timeline}). The complete user simulator prompt is shown in Appendix~\ref{app:user-sim-prompt}.
+
+\subsubsection{Scenario}
+
+Table~\ref{tab:task41-config} shows the configuration for this task.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{ll}
+\toprule
+\textbf{Property} & \textbf{Value} \\
+\midrule
+Domain & Retail \\
+Agent & {\color{red!75!black}\texttt{gemini-live-2.5}} \\
+User Persona & wei\_lin (Chinese woman from Sichuan) \\
+Complexity & Realistic (all audio effects enabled) \\
+Background Noise & Busy street (outdoor environment) \\
+Duration & 179 seconds (3 minutes) \\
+Task Outcome & 0.0 reward (failed) \\
+\bottomrule
+\end{tabular}
+\caption{Task 41 configuration.}
+\label{tab:task41-config}
+\end{table}
+
+\paragraph{User's Goal.} The user (Mei Patel, user ID \texttt{mei\_patel\_7272}) has two problems:
+\begin{enumerate}
+\item Exchange a 1000-piece intermediate jigsaw puzzle for the easiest one with fewest pieces (too hard for her kid)
+\item Check and correct the shipping address on all orders and her user profile (typed it wrong)
+\end{enumerate}
+
+\paragraph{User Constraints.} The user is ``brief and polite'' but has poor memory---she does not remember her email address and must authenticate via name + zip code.
+
+\subsubsection{Evaluation Criteria}
+
+Task success (reward = 1.0) is determined by the \textbf{final database state} and natural language assertions. 
+
+For the database to match the expected state, the agent must execute the following write actions with the correct arguments:
+
+\begin{enumerate}
+\item \texttt{modify\_pending\_order\_address}
+\begin{itemize}
+\item \texttt{order\_id}: \#W9583042
+\item \texttt{address1}: 445 Maple Drive
+\item \texttt{address2}: Suite 394
+\item \texttt{city}: Fort Worth
+\item \texttt{state}: TX
+\item \texttt{country}: USA
+\item \texttt{zip}: 76165
+\end{itemize}
+
+\item \texttt{modify\_pending\_order\_address}
+\begin{itemize}
+\item \texttt{order\_id}: \#W4082615
+\item \texttt{address1}: 445 Maple Drive
+\item \texttt{address2}: Suite 394
+\item \texttt{city}: Fort Worth
+\item \texttt{state}: TX
+\item \texttt{country}: USA
+\item \texttt{zip}: 76165
+\end{itemize}
+
+\item \texttt{modify\_user\_address}
+\begin{itemize}
+\item \texttt{user\_id}: mei\_patel\_7272
+\item \texttt{address1}: 445 Maple Drive
+\item \texttt{address2}: Suite 394
+\item \texttt{city}: Fort Worth
+\item \texttt{state}: TX
+\item \texttt{country}: USA
+\item \texttt{zip}: 76165
+\end{itemize}
+
+\item \texttt{modify\_pending\_order\_items}
+\begin{itemize}
+\item \texttt{order\_id}: \#W4082615
+\item \texttt{item\_ids}: [9779102705] (1000-piece intermediate jigsaw)
+\item \texttt{new\_item\_ids}: [1096508426] (easiest jigsaw with fewest pieces)
+\item \texttt{payment\_method\_id}: paypal\_4768213
+\end{itemize}
+\end{enumerate}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{clp{7cm}}
+\toprule
+\textbf{Step} & \textbf{Tool Call} & \textbf{Key Arguments} \\
+\midrule
+1 & find\_user\_id\_by\_name\_zip & first\_name: Mei, last\_name: Patel, zip: 76165 \\
+2 & get\_user\_details & user\_id: mei\_patel\_7272 \\
+3 & get\_order\_details & order\_id: \#W9583042 \\
+4 & get\_order\_details & order\_id: \#W4082615 \\
+5 & modify\_pending\_order\_address & order\_id: \#W9583042, address: 445 Maple Drive... \\
+6 & modify\_pending\_order\_address & order\_id: \#W4082615, address: 445 Maple Drive... \\
+7 & modify\_user\_address & user\_id: mei\_patel\_7272, address: 445 Maple Drive... \\
+8 & get\_product\_details & product\_id: 1808611083 (jigsaw puzzle) \\
+9 & get\_order\_details & order\_id: \#W4082615 (re-check before modify) \\
+10 & modify\_pending\_order\_items & order\_id: \#W4082615, exchange item 9779102705 $\rightarrow$ 1096508426 \\
+\bottomrule
+\end{tabular}
+\caption{Example tool call sequence for Task 41. Read calls (steps 1--4, 8--9) gather information; write calls (steps 5--7, 10) modify the database. Only the final database state is checked for reward.}
+\label{tab:task41-eval}
+\end{table}
+
+Table~\ref{tab:task41-eval} shows one possible sequence. The exact read calls may vary---only the final database state matters.
+
+\paragraph{Why This Task Failed.} The agent completed only 1 of the 4 required write actions. Table~\ref{tab:task41-completion} shows the completion status for each required action.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Required Action} & \textbf{Completed?} & \textbf{Notes} \\
+\midrule
+\texttt{modify\_pending\_order\_address} (\#W9583042) & \textcolor{red}{No} & Never called \\
+\texttt{modify\_pending\_order\_address} (\#W4082615) & \textcolor{red}{No} & Agent claimed done but didn't call \\
+\texttt{modify\_user\_address} & \textcolor{green!60!black}{Yes} & Successfully updated profile \\
+\texttt{modify\_pending\_order\_items} & \textcolor{red}{No} & Exchange never completed \\
+\bottomrule
+\end{tabular}
+\caption{Write action completion status for Task 41.}
+\label{tab:task41-completion}
+\end{table}
+
+Key failures: (1) The agent \textbf{hallucinated an email} (``pat.doe@example.com'') before the user provided any information; (2) the agent updated the user's profile address but \textbf{falsely claimed} to have updated order shipping addresses; (3) the \textbf{puzzle exchange was never completed}---despite discussing options, the conversation ended without the agent calling \texttt{modify\_pending\_order\_items}.

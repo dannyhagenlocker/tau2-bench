@@ -1,0 +1,27 @@
+\begin{table}[h]
+\caption{Speech complexity conditions by ablation (single factors). Columns: Cln=Clean, +N=Noise, +A=Accents, +T=Turn-taking, Real=Realistic (all effects).}
+\label{tab:conditions-ablation-single}
+\centering
+\begin{small}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{llccccc}
+\toprule
+\textbf{Category} & \textbf{Setting} & \textbf{Cln} & \textbf{+N} & \textbf{+A} & \textbf{+T} & \textbf{Real} \\
+\midrule
+\multirow{1}{*}{Accents} & Personas &  &  & \checkmark &  & \checkmark \\
+\midrule
+\multirow{5}{*}{Audio/Channel} & Background noise &  & \checkmark &  &  & \checkmark \\
+ & Burst noise &  & \checkmark &  &  & \checkmark \\
+ & Frame drops &  & \checkmark &  &  & \checkmark \\
+ & Telephony & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+ & Muffling &  & \checkmark &  &  & \checkmark \\
+\midrule
+\multirow{4}{*}{Turn-Taking} & Involuntary sounds &  &  &  & \checkmark & \checkmark \\
+ & Non agent-directed speech &  &  &  & \checkmark & \checkmark \\
+ & Interruptions &  &  &  & \checkmark & \checkmark \\
+ & Backchanneling &  &  &  & \checkmark & \checkmark \\
+\bottomrule
+\end{tabular}%
+}
+\end{small}
+\end{table}

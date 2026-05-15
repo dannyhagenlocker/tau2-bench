@@ -1,0 +1,195 @@
+\section{Additional Experimental Results}
+\label{app:results}
+
+\subsection{Surveyed Audio-Native Models}\label{app:audio-native-audit}
+
+\tauvoice{} evaluates three audio-native models in the main body (\S\ref{sec:experiments}); this appendix documents the broader survey behind that selection. As of March 2026, we surveyed the audio-native models listed in Table~\ref{tab:audio-native-audit}. The two inclusion criteria are realtime full-duplex audio \emph{and} native tool calling, both required because \tauvoice{} is a grounded, tool-use benchmark; the disqualified models satisfy the first criterion but not the second, since their published documentation does not describe tool-calling support from their audio-conditioned head. Amazon Nova 2 Sonic qualifies on both axes but was deprioritized as another closed-source provider unlikely to add qualitatively different insight to the three already evaluated. The audio-native landscape evolves quickly; the live leaderboard at \href{https://taubench.com}{taubench.com} tracks the canonical up-to-date list.%
+
+\begin{table}[h]
+\caption{Audio-native models surveyed for \tauvoice{} evaluation, as of March 2026. Realtime full-duplex audio = streaming bidirectional audio with voice-activity-detected turn-taking. Native tool calling = the model supports tool calls directly from its audio-conditioned head, without an external ASR$\to$LLM cascade. Both criteria are required for inclusion (\S\ref{sec:experiments}). The audio-native landscape evolves quickly; the live leaderboard at \href{https://taubench.com}{taubench.com} tracks the canonical up-to-date list.}
+\label{tab:audio-native-audit}
+\centering
+\begin{small}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Model} & \makecell{\textbf{Realtime}\\\textbf{full-duplex audio}} & \makecell{\textbf{Native}\\\textbf{tool calling}} & \makecell{\textbf{Evaluated}\\\textbf{in \tauvoice{}}} \\
+\midrule
+\multicolumn{4}{l}{\textit{Qualifying (both criteria satisfied)}} \\
+OpenAI Realtime~\cite{openai_introducing_2025} & \checkmark & \checkmark & \checkmark \\
+Gemini Live~\cite{vertex_ai_gemini_2025} & \checkmark & \checkmark & \checkmark \\
+xAI Voice Agent~\cite{xai_grok_voice_2025} & \checkmark & \checkmark & \checkmark \\
+Amazon Nova 2 Sonic~\cite{amazon_nova_sonic_2025} & \checkmark & \checkmark & \xmark$^{\dagger}$ \\
+\midrule
+\multicolumn{4}{l}{\textit{Realtime full-duplex audio, but no native tool calling}} \\
+NTPP~\cite{wang_ntpp_2025} & \checkmark & \xmark & \xmark \\
+LLaMA-Omni~\cite{fang_llama-omni_2025} & \checkmark & \xmark & \xmark \\
+SALMONN-omni~\cite{yu_salmonn-omni_2025} & \checkmark & \xmark & \xmark \\
+Moshi~\cite{defossez_moshi_2024} & \checkmark & \xmark & \xmark \\
+PersonaPlex~\cite{nvidia_personaplex_2026} & \checkmark & \xmark & \xmark \\
+MiniCPM-o 4.5~\cite{openbmb_minicpm-o_2026} & \checkmark & \xmark & \xmark \\
+Qwen-Omni-Realtime~\cite{qwen_omni_realtime_2025} & \checkmark & \xmark & \xmark \\
+\bottomrule
+\end{tabular}%
+}
+\end{small}
+\\[0.5em]
+\footnotesize $^{\dagger}$ Qualifies on both axes but deprioritized as another closed-source provider unlikely to add qualitatively different insight beyond the three already evaluated.%
+\end{table}
+
+\subsection{Voice Interaction Quality: Full Metric Breakdown}
+\label{app:voice-metrics-detail}
+
+Table~\ref{tab:voice-quality-detail} provides the full breakdown of voice interaction metrics. Columns are grouped by: \textbf{Latency} ($L_R$ = Response Latency, $L_Y$ = Yield Latency), \textbf{Responsiveness} ($R_R$ = Response Rate, $R_Y$ = Yield Rate), \textbf{Interrupt} ($I_A$ = Agent Interruption Rate), and \textbf{Selectivity} ($S_{BC}$ = Backchannel Correct, $S_{VT}$ = Vocal Tic Correct, $S_{ND}$ = Non-Directed Correct). For $L_R$, $R_R$, and $I_A$, separate columns show Clean (C) and Realistic (R) speech conditions; other metrics are evaluated on Realistic only.
+
+\begin{table*}[h]
+\caption{Voice interaction quality metrics---full breakdown (Realistic condition). \textbf{Bold} indicates best per domain. $\uparrow$ = higher is better, $\downarrow$ = lower is better.}
+\label{tab:voice-quality-detail}
+\centering
+\begin{small}
+\resizebox{\textwidth}{!}{%
+\input{results/full_voice_quality_table}
+}
+\end{small}
+\end{table*}
+
+
+
+\subsection{Qualitative Error Analysis}
+\label{app:qualitative-analysis}
+
+We conducted a qualitative analysis of task failures to understand error sources and types. We annotated all failed simulations from two analysis cohorts: (1) Voice-Fragile (43 simulations across 20 tasks passing in text but failing in Clean audio), and (2) Noise-Fragile (48 simulations across 19 tasks passing in Clean but failing in Realistic audio).
+
+\paragraph{Qualitative Annotations.}
+Table~\ref{tab:full-notes-both} shows the qualitative annotations for each failed simulation.
+
+\begin{table*}[h]
+\caption{Qualitative error annotations for task completion failures. Left: Voice-Fragile cohort (43 simulations from Clean audio setting). Right: Noise-Fragile cohort (48 simulations from Realistic audio setting).}
+\label{tab:full-notes-both}
+\centering
+\begin{small}
+\begin{minipage}{0.48\textwidth}
+\centering
+\textbf{Voice-Fragile}\\[0.5em]
+\input{results/full_notes_text_vs_clean_audio}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\textwidth}
+\centering
+\textbf{Noise-Fragile}\\[0.5em]
+\input{results/full_notes_clean_vs_realistic_audio}
+\end{minipage}
+\end{small}
+\end{table*}
+
+\paragraph{Error Type Definitions.}
+We categorize errors into six types based on observed failure patterns:
+
+\begin{itemize}[nosep,leftmargin=*]
+    \item \textbf{Logical} (Agent or User): Reasoning or execution errors, including incorrect tool call arguments/formatting, taking wrong actions (cancelling/modifying wrong items), failing to follow instructions (not asking for spelling, not confirming), or losing track of conversation state.
+    
+    \item \textbf{Transcription} (Agent): Speech-to-text errors where the agent incorrectly transcribes user speech, most commonly during authentication when users spell names/emails letter-by-letter, or when transcribing specific user requests.
+    
+    \item \textbf{Hallucination} (Agent or User): Agent fabricates information (e.g., inventing item IDs, hallucinating order details) or user simulator states information not present in the task instructions.
+    
+    \item \textbf{VAD/Unresponsive} (Agent): Voice Activity Detection errors where the agent fails to detect user speech, or agent goes silent for an extended period despite multiple user check-ins.
+    
+    \item \textbf{Timeout} (Agent): Agent could not resolve the call within the 10-minute simulation limit, typically due to being too slow or verbose.
+    
+    \item \textbf{Early Termination} (User): User ends the call prematurely before the task is fully completed, often due to ambiguous communication where user assumes the task is done when it is not.
+\end{itemize}
+
+\subsection{Simulator Realism Validation}\label{app:simulator-realism}
+
+To validate that the voice user simulator produces interactions that resemble realistic caller behavior, we conducted a small human annotation study.%
+
+\paragraph{Methodology.} Two annotators independently rated 60 simulations stratified across domains and speech-complexity conditions on a 1--4 Likert scale (1 = clearly unrealistic, 4 = indistinguishable from a real caller). Each simulation was rated along six dimensions:%
+
+\begin{itemize}[nosep,leftmargin=*]
+    \item \textbf{Voice prosody}: pitch, rhythm, and intonation of the synthesized caller speech.
+    \item \textbf{Audio environment realism}: plausibility of the simulated background audio (noise, ambient sounds, intermittent events).
+    \item \textbf{Turn-taking naturalness}: timing and flow of speaker transitions.
+    \item \textbf{Backchannel naturalness}: realism of acknowledgement tokens (``mm-hmm'', ``okay'').
+    \item \textbf{Interruption behavior}: appropriateness and frequency of mid-utterance interjections.
+    \item \textbf{Behavioral plausibility}: holistic judgment of whether the caller behaves like a real human across the whole call.
+\end{itemize}%
+%
+
+\paragraph{Results.} Table~\ref{tab:simulator-realism} reports the per-dimension means averaged across the two annotators. Averaging across the six dimensions, the simulator achieves an overall mean of 3.1/4, with 83\% of all individual ratings at 3 or above. Within-1 inter-rater agreement --- the fraction of (simulation, dimension) pairs on which the two raters' scores are within one point of each other --- is 94\%, suggesting consistent perception of simulator quality across annotators.%
+
+\begin{table}[h]
+\caption{Simulator realism ratings, averaged across two annotators on 60 simulations (1--4 scale; higher is better). Overall row is the mean across the six dimensions.}
+\label{tab:simulator-realism}
+\centering
+\begin{small}
+\begin{tabular}{@{}lc@{}}
+\toprule
+\textbf{Dimension} & \textbf{Mean rating} \\
+\midrule
+Voice prosody & 2.6 / 4 \\
+Audio environment realism & 3.3 / 4 \\
+Turn-taking naturalness & 3.1 / 4 \\
+Backchannel naturalness & \textbf{3.5 / 4} \\
+Interruption behavior & 3.0 / 4 \\
+Behavioral plausibility (holistic) & 3.1 / 4 \\
+\midrule
+\textbf{Overall (mean across dimensions)} & \textbf{3.1 / 4} \\
+\bottomrule
+\end{tabular}
+\end{small}
+\end{table}
+
+\paragraph{Discussion.} The dimensions most directly relevant to task evaluation---turn-taking, interruption behavior, backchanneling, and overall behavioral plausibility---all score at or above 3.0/4, supporting the use of the simulator as a controllable substitute for human callers in this benchmark. The weakest dimension is voice prosody (2.6/4), consistent with our deliberate choice (\S\ref{sec:conclusion}) not to evaluate agent speech generation quality and to treat TTS-synthesized caller audio as indicative rather than definitive. This study is not a substitute for evaluation with real human callers, which we list as future work (\S\ref{sec:conclusion}); rather, it provides a check that the dimensions of simulator behavior that most directly affect agent task completion are acceptably realistic.%
+
+\subsection{Statistical Reliability Analysis}
+\label{app:stat-sig}
+
+To assess statistical reliability, we conducted 2 independent runs per condition across all three domains (Airline $n=50$, Retail $n=114$, Telecom $n=114$). We use paired permutation tests rather than trial-level confidence intervals: for each pair of conditions, we compute per-task mean success rates, pair observations by task ID, and test whether the paired differences are systematically non-zero (100k permutations, two-sided). $p$-values are Holm-Bonferroni corrected within each (domain, model) group to control for multiple comparisons; for the combined view, correction is applied within each model across all comparisons. Because rates are pooled across both runs, they may differ slightly from the single-run rates reported in the main results.%
+
+Two patterns hold across all three domains (Tables~\ref{tab:stat-sig} and~\ref{tab:stat-sig-per-domain}). First, the gap between voice and reasoning-text (GPT-5) is large and significant in every domain and for every model (all $p < 0.001$). Second, the Clean-to-Realistic degradation holds in Retail for all models, but in Airline and Telecom it is only significant for \texttt{grok-voice}. The most notable per-domain deviation is in Telecom, where \texttt{grok-voice}'s Clean rate (57.5\%) significantly \emph{exceeds} the non-reasoning text baseline ($+$20.6pp, $p < 0.001$); this pulls the combined non-reasoning Text$\,\to\,$Clean gap for \texttt{grok-voice} to non-significance ($p = 0.231$), but the anomaly disappears under Realistic conditions where Text$\,\to\,$Realistic is significant for all three models.%
+
+%
+
+\begin{table}[h]
+\caption{Pairwise statistical significance pooled across all three domains (Airline, Retail, Telecom; 2 runs each). Text (NR) = GPT-4.1; Text (R) = GPT-5. All $p$-values are Holm-Bonferroni corrected paired permutation tests (100k permutations, paired by task ID).}
+\label{tab:stat-sig}
+\centering
+\begin{small}
+\input{results/stat_sig_table}
+\end{small}
+\end{table}
+
+\begin{table}[h]
+\caption{Per-domain pairwise statistical significance (2 runs per condition). Text (NR) = GPT-4.1; Text (R) = GPT-5. All $p$-values are Holm-Bonferroni corrected paired permutation tests (100k permutations, paired by task ID, corrected within each (domain, model) group).}
+\label{tab:stat-sig-per-domain}
+\centering
+\begin{small}
+\input{results/stat_sig_table_per_domain}
+\end{small}
+\end{table}
+
+\subsection{ASR-enabled Evaluation}\label{app:asr-enabled}
+
+We ran a preliminary single-run evaluation on Retail ($n=114$) in which the user simulator perceives the agent through Deepgram Nova-3 streaming ASR (telephony $\mu$-law @ 8\,kHz, finalized segments) rather than the agent's native transcript. Both the text-to-voice gap and the Clean-to-Realistic degradation persist with comparable magnitude (Table~\ref{tab:asr-enabled}); formal significance testing is deferred to future work.%
+
+\begin{table}[h]
+\caption{ASR-enabled vs.\ default-mode evaluation on Retail ($n=114$, 1 run). Default-mode columns are the Retail subset of Table~\ref{tab:text-control-regular}.}
+\label{tab:asr-enabled}
+\centering
+\begin{small}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+ & \multicolumn{2}{c}{\textbf{Default}} & \multicolumn{2}{c}{\textbf{ASR-enabled}} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+\textbf{Model} & \textbf{Clean} & \textbf{Realistic} & \textbf{Clean} & \textbf{Realistic} \\
+\midrule
+\texttt{gemini-live-2.5} & 45\% & 30\% & 40\% & 25\% \\
+\texttt{gpt-realtime-1.5} & 71\% & 45\% & 61\% & 33\% \\
+\texttt{grok-voice} & 48\% & 39\% & 48\% & 22\% \\
+\midrule
+GPT-4.1 (text) & \multicolumn{2}{c}{76\%} & \multicolumn{2}{c}{---} \\
+GPT-5 (text) & \multicolumn{2}{c}{81\%} & \multicolumn{2}{c}{---} \\
+\bottomrule
+\end{tabular}
+\end{small}
+\end{table}

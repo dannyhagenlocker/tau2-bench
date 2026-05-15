@@ -1,0 +1,122 @@
+\section{Turn-Taking Prompts}
+\label{app:turn-taking-prompts}
+
+The user simulator uses LLM-based decisions for interruption and backchanneling. Both prompts receive the linearized conversation history (see Appendix~\ref{app:linearization} for the linearization algorithm) with the agent's current (incomplete) utterance marked.
+
+The examples below are drawn from Task 41, the same conversation shown in the speech activity timeline (Figure~\ref{fig:speech-timeline}) and the example transcript (Appendix~\ref{app:example-transcript}). At 67.8s, the user interrupts with ``Jigsaw first''; at 121.8s, the user backchannels with ``mm-hmm.''
+
+\subsection{Interruption Decision Prompt}
+
+\begin{lstlisting}
+You are analyzing a conversation to decide if the user should interrupt the agent.
+
+Conversation history (most recent at bottom):
+
+<conversation_history>
+{conversation_history}
+</conversation_history>
+
+The agent is CURRENTLY speaking (you can see their ongoing speech in the conversation above).
+
+Based on the conversation so far, should the user interrupt the agent NOW?
+
+Consider:
+- Has the user heard enough to understand what the agent is asking or saying?
+- Has the user heard enough to have a response, question, or correction ready?
+- Did the agent just complete the sentence which has all the pertinent information the user was looking for?
+- Do NOT repeatedly interrupt the agent if it has spoken only a few words (say less than 5 words).
+
+Respond with ONLY "YES" if the user should interrupt now, or "NO" if they should keep listening.
+\end{lstlisting}
+
+\paragraph{Example from Task 41 (67.8s).} At this point, the agent has just asked ``Which would you like to do first?'' and the user decides to interrupt with ``Jigsaw first.''
+
+\begin{lstlisting}
+<conversation_history>
+USER: Hi, I have two problems. First, I ordered a 1000-piece intermediate jigsaw, but I think it's too hard for my kid---can I switch it to the easiest one with the fewest pieces? Second, I might have typed my address wrong. I want to check and maybe fix the address.
+AGENT: Hello!
+AGENT: I can help
+AGENT: I'd be happy to help with both of those issues. First, I need to authenticate you. I tried using pat.doe@example.com, but it wasn't found. Can you provide me with your email address spelled out, or your first and last name and zip code?
+USER: I don't remember my email.
+USER: Yeah. First name: M, E, I. Last name: P
+AGENT: M E I, got it. An
+AGENT: P, okay. And the rest of your last name?
+USER: A, T, E, L. Zip code: seven, six, one, six, five.
+AGENT: Thank you, I've found your account. I can help you with the jigsaw puzzle exchange and checking your address. Which would you like to do fir [CURRENTLY SPEAKING, INCOMPLETE]
+</conversation_history>
+\end{lstlisting}
+
+\noindent\textbf{LLM Response:} YES $\rightarrow$ User interrupts with ``Jigsaw first.''
+
+\subsection{Backchannel Decision Prompt}
+
+\begin{lstlisting}
+You simulate a natural listener who occasionally says "uh-huh" or "mm-hmm" to show they're following along.
+
+<conversation_history>
+{conversation_history}
+</conversation_history>
+
+The agent is still speaking [CURRENTLY SPEAKING, INCOMPLETE]. Ignore the trailing incomplete word/phrase---focus only on the COMPLETE sentences delivered so far in the agent's current turn.
+
+Continuers ("uh-huh", "mm-hmm", "yeah") are brief sounds that mean "I'm listening, keep going." They:
+- Happen naturally during extended speech
+- Show engagement without interrupting
+- Are NOT responses to specific content---just signals of attention
+
+Say YES if:
+- The agent has completed at least 2 full, substantive sentences in their current turn (Short phrases like "Thanks for your patience" or "Let me check on that" don't count as substantive)
+- The user hasn't spoken or backchanneled recently (check the last 3 exchanges for ANY user sound including "mm-hmm", "uh-huh", "okay")
+- It would feel natural to briefly signal "I'm still here"
+
+Say NO if:
+- The agent just started speaking (fewer than 2 substantive sentences)
+- The user spoke OR backchanneled within the last 2--3 exchanges
+- The agent's current turn contains or ends with a question
+- The agent is wrapping up or about to finish their thought
+
+Frequency guidance:
+- Continuers are occasional, not constant
+- Even when conditions seem right, real listeners only backchannel sometimes
+- Aim for roughly 1 continuer per 4--6 sentences of extended agent speech
+- When in doubt, say NO---silence is also natural
+- Too few continuers is better than too many
+
+Examples:
+
+AGENT: "Hi there! How can I hel [CURRENTLY SPEAKING, INCOMPLETE]"
+-> NO (just started)
+
+AGENT: "Thanks for your patience. [CURRENTLY SPEAKING, INCOMPLETE]"
+-> NO (only 1 short sentence, not substantive enough)
+
+AGENT: "Sure, I can help with that. First I'll need to verify your account. Could you provide your email or your name and zi [CURRENTLY SPEAKING, INCOMPLETE]"
+-> NO (agent is asking a question)
+
+AGENT: "No problem. We can use your name and zip code instead. Let me look that up for you. I'll check our system now and see if I can fin [CURRENTLY SPEAKING, INCOMPLETE]"
+-> YES (3 substantive sentences, agent explaining process)
+
+AGENT: "I found your order. It includes a keyboard, thermostat, and headphones. The order was delivered last Tuesday. Now for the exchange, we have a few opti [CURRENTLY SPEAKING, INCOMPLETE]"
+-> YES (extended explanation with specific details)
+
+[If user said "mm-hmm" 2 exchanges ago]
+AGENT: "...and those are the available options. Now I'll need your input on which [CURRENTLY SPEAKING, INCOMPLETE]"
+-> NO (user backchanneled recently, don't do it again so soon)
+
+Respond with ONLY "YES" or "NO".
+\end{lstlisting}
+
+\paragraph{Example from Task 41 (121.8s).} The agent is explaining the puzzle exchange options. The user said ``Yeah, that's it'' 8 seconds earlier (at 113.8s), and the agent has now delivered several substantive sentences.
+
+\begin{lstlisting}
+<conversation_history>
+...
+USER: No, I don't know the item ID.
+USER: I just remember it's the 1000-piece intermediate jigsaw.
+AGENT: I found a 1000-piece "intermediate" jigsaw puzzle on order #W4082615. Is that the one? We can exchange it for a puzzle with fewer pieces. The puzzle you have is 1000 piec [CURRENTLY SPEAKING, INCOMPLETE]
+USER: Yeah, that's it.
+AGENT: ...es. The available options with fewer pieces are 500-piece puzzles. Would you like to exchange it for one of tho [CURRENTLY SPEAKING, INCOMPLETE]
+</conversation_history>
+\end{lstlisting}
+
+\noindent\textbf{LLM Response:} YES $\rightarrow$ User backchannels with ``mm-hmm'' (agent correctly continues speaking).

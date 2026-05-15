@@ -1,0 +1,30 @@
+\section{Voice Interaction Metrics}
+\label{app:voice-metrics}
+
+This appendix defines the agent errors used to compute voice interaction metrics.
+
+\paragraph{Timing thresholds.} Yield window: 2.0s (agent must stop within this time after user interruption). Selectivity windows: 1.0s for incorrect yields, 2.0s for incorrect responses.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{llllc}
+\toprule
+\textbf{Error Type} & \textbf{Agent State} & \textbf{Trigger} & \textbf{Incorrect Behavior} & \textbf{Window} \\
+\midrule
+\multicolumn{5}{l}{\textit{Turn-Taking}} \\
+No-Response & Silent & User turn ends & No response & --- \\
+No-Yield & Speaking & User interrupts & Keep speaking & 2.0s \\
+Agent Interruption & Any & User speaking & Start speaking & --- \\
+\midrule
+\multicolumn{5}{l}{\textit{Selectivity}} \\
+Backchannel Yield & Speaking & Backchannel & Stop speaking & 1.0s \\
+Vocal Tic Yield & Speaking & Vocal tic & Stop speaking & 1.0s \\
+Non-Directed Yield & Speaking & Non-directed speech & Stop speaking & 1.0s \\
+Responds to Vocal Tic & Silent & Vocal tic & Start speaking & 2.0s \\
+Responds to Non-Directed & Silent & Non-directed speech & Start speaking & 2.0s \\
+\bottomrule
+\end{tabular}
+\caption{Agent error definitions. Turn-taking errors affect $R_R$, $R_Y$, and $I_A$. Selectivity errors affect $S_{BC}$, $S_{VT}$, and $S_{ND}$.}
+\label{tab:error-summary}
+\end{table}

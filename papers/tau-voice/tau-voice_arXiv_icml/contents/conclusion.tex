@@ -1,0 +1,20 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+\subsection{Limitations}
+
+\textbf{Language and Speech:} We evaluate English only using TTS rather than recorded speech. Accent findings via TTS personas should be interpreted as indicative rather than definitive.
+
+\textbf{Evaluation Scope:} We measure task completion and conversational dynamics, but not agent speech generation quality (tone, naturalness), user satisfaction, or partial task success.
+
+\textbf{Simulator Fidelity:} Our simulator is more patient than real users, with perfect memory and instantaneous tool calls. We decouple from wall-clock time for controllability, but validated this choice by testing with artificial 5-second response delays---observing no adverse effects on agent behavior. In practice, the p95 simulator processing time is $\sim$1.5 seconds, well within conversational tolerance. To validate simulator realism more directly, two annotators independently rated 60 simulations on a 1--4 scale across turn-taking naturalness, interruption behavior, backchannel naturalness, and voice prosody (Appendix~\ref{app:simulator-realism}). The simulator scored 3.1/4 overall, with 83\% of ratings at 3 or above and 94\% within-1 inter-rater agreement. Backchannel naturalness was the strongest dimension (3.5/4) and voice prosody the weakest (2.6/4), consistent with our explicit choice not to evaluate agent speech generation quality.%
+
+\textbf{Transcript Injection:} The simulator bypasses ASR on the agent side by feeding transcripts directly to the user simulator LLM. In our error analysis (Section~\ref{sec:analysis}), annotators found agent speech intelligible in 100\% of the 91 sampled simulations, suggesting this simplification has minimal impact. Combined with TTS-synthesized user speech, the default configuration evaluates \tauvoice{} as a \textit{controlled} full-duplex voice benchmark rather than a fully end-to-end deployed-agent benchmark; default-mode scores should be read as an \textbf{upper bound} on real-world performance. An \textit{ASR-enabled} mode (\S\ref{sec:voice-user-simulator}, Appendix~\ref{app:asr-enabled}) provides a stricter end-to-end stress test where the user simulator perceives the agent through ASR (Deepgram Nova-3); a preliminary single-run evaluation on Retail under that mode shows that the text-to-voice gap and the Clean-to-Realistic degradation both persist with comparable magnitude.%
+
+\subsection{Future Work}
+
+Future directions include tool call latency, agent speech quality evaluation, non-English languages, and human user studies to validate simulator dynamics. We also plan to onboard open-source full-duplex models as they gain native tool calling; new entrants will be tracked on the public leaderboard at \href{https://taubench.com}{taubench.com}. Adding cascaded ASR$\rightarrow$LLM$\rightarrow$TTS baselines (supported by \tauvoice{}'s architecture) would help isolate voice modality effects from architecture choices. The model-specific accent vulnerabilities we observe also motivate accessibility-focused evaluation---measuring whether voice agents serve users equitably across accents, speech patterns, and acoustic environments.
+
+\subsection{Conclusion}
+
+We introduced \textbf{\tauvoice{}}, extending \tautwobench{} to full-duplex voice with 278 tasks across retail, airline, and telecom domains. Our evaluation reveals a substantial voice-text gap: while GPT-5 (reasoning) achieves 85\%, voice agents reach only 31--51\% under clean conditions and 26--38\% under realistic conditions---retaining only 30--45\% of text capability. Error analysis attributes 79--90\% of failures to agent behavior rather than simulator artifacts, suggesting the benchmark measures genuine agent limitations. We release \tauvoice{} to support development of voice agents that reliably complete tasks under realistic conditions.

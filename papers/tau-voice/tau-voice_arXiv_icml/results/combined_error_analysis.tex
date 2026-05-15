@@ -1,0 +1,18 @@
+\begin{tabular}{@{}llcc@{}}
+\toprule
+\textbf{Source} & \textbf{Error Type} & \makecell{\textbf{Voice-}\\\textbf{Fragile}} & \makecell{\textbf{Noise-}\\\textbf{Fragile}} \\
+\midrule
+\multirow{6}{*}{Agent} & Logical & 13 & 16 \\
+& Transcription & 10 & 16 \\
+& Hallucination & 6 & 6 \\
+& VAD/Unresponsive & 1 & 4 \\
+& Timeout & 4 & 1 \\
+\cmidrule{2-4}
+& \textit{Total} & \textit{34 (79\%)} & \textit{43 (90\%)} \\
+\midrule
+\multirow{3}{*}{User} & Logical & 9 & 1 \\
+& Early Term. & 0 & 4 \\
+\cmidrule{2-4}
+& \textit{Total} & \textit{9 (21\%)} & \textit{5 (10\%)} \\
+\bottomrule
+\end{tabular}

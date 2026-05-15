@@ -1,0 +1,48 @@
+\section{Full-Duplex Audio Processing}
+\label{app:audio-processing}
+
+\subsection{Buffer Formalism}
+\label{app:buffer-formalism}
+
+Since audio generation may not align with tick boundaries, both sides buffer. We formalize the agent-side buffer, where interruption semantics matter:
+\begin{align}
+a^t &= (B^{t-1} \oplus \tilde{a}^t)[0:\tau] \label{eq:agent-output}\\
+B^t &= \begin{cases}
+\emptyset & \text{if interrupted} \\
+(B^{t-1} \oplus \tilde{a}^t)[\tau:] & \text{otherwise}
+\end{cases} \label{eq:buffer-update}
+\end{align}
+where $\tilde{a}^t$ is the audio streamed by the API during tick $t$'s wall-clock duration, $B^t$ is the output buffer, and $\oplus$ denotes concatenation. On interruption, the buffer is cleared, truncating the agent's in-progress response.
+
+\subsection{Proportional Text Distribution}
+\label{sec:proportional-text}
+
+Agent APIs stream audio alongside transcript text, but text often arrives before or after its corresponding audio. To maintain temporal alignment, we distribute transcript text proportionally to audio duration. For each utterance, let $T$ be the total transcript and $A_\text{total}$ the total audio bytes received. At each tick, we emit:
+\[
+T^t = T\left[0 : \frac{A_\text{played}^t}{A_\text{total}} \cdot |T|\right]
+\]
+where $A_\text{played}^t$ is the cumulative audio played through tick $t$. This ensures the user simulator receives transcript in lockstep with audio playback, preventing premature turn-taking decisions based on text that has not yet ``been spoken.''
+
+\subsection{Linearization Algorithm}
+\label{app:linearization}
+
+Converting overlapping full-duplex speech to sequential messages for evaluation:
+
+\textbf{Rule:} ``If you speak entirely during someone else's turn, you get inserted where you stopped. Otherwise, whoever started first goes first.''
+
+Table~\ref{tab:linearization-rules} shows the handling for each overlap case.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+\textbf{Case} & \textbf{Condition} & \textbf{Action} \\
+\midrule
+No overlap & Segments don't touch & Chronological order \\
+Partial overlap & Segments cross, neither contained & Order by start time \\
+Containment & X fully inside Y & Split Y at X's end, insert X there \\
+\bottomrule
+\end{tabular}
+\caption{Linearization rules for converting overlapping speech to sequential messages.}
+\label{tab:linearization-rules}
+\end{table}

@@ -1,0 +1,52 @@
+\section{Related Work}
+\label{sec:related}
+
+Evaluating voice agents requires measuring both \textit{what} they accomplish and \textit{how} they converse. Table~\ref{tab:related-comparison} summarizes how existing benchmarks address three key dimensions: \textbf{Task Completion} (tasks requiring correct API calls with verifiable database state changes), \textbf{Full-Duplex} (simultaneous bidirectional speech with turn-taking and interruptions), and \textbf{Realistic Audio Environment} (diverse speaker characteristics, accents, background noise, channel degradation, and disfluencies).
+
+\begin{table}[ht]
+\caption{Comparison of evaluation dimensions across benchmarks. Prior work advances individual dimensions; \tauvoice{} combines all three.}
+\label{tab:related-comparison}
+\centering
+\begin{small}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lccc}
+\toprule
+& \makecell{\textbf{Task}\\\textbf{Completion}} & \makecell{\textbf{Full-}\\\textbf{Duplex}} & \makecell{\textbf{Realistic}\\\textbf{Audio Env.}} \\
+\midrule
+\multicolumn{4}{l}{\textit{Task-Oriented (Text)}} \\
+\quad \taubench{}~\cite{yao_-bench_2024} & \checkmark & & \\
+\quad \tautwobench{}~\cite{barres_2-bench_2025} & \checkmark & & \\
+\midrule
+\multicolumn{4}{l}{\textit{Conversational Dynamics}} \\
+\quad Full-Duplex-Bench~\cite{lin_full-duplex-bench_2025} & & \checkmark & \\
+\quad Full-Duplex-Bench-V2~\cite{lin_full-duplex-bench-v2_2025} & $\sim$ & \checkmark & \\
+\quad Talking Turns~\cite{arora_talking_2025} & & \checkmark & \\
+\midrule
+\multicolumn{4}{l}{\textit{Speech Understanding}} \\
+\quad VoiceBench~\cite{chen_voicebench_2024} & & & \checkmark \\
+\quad VocalBench~\cite{liu_vocalbench_2026} & & & \checkmark \\
+\quad Audio MultiChallenge~\cite{gosai_audio_2025} & & & \checkmark \\
+{\color{red!75!black}\quad VoiceAgentBench~\cite{jain2026voiceagentbenchvoiceassistantsready}} & {\color{red!75!black}$\sim$} & & \\
+\midrule
+\textbf{\tauvoice{}} & \checkmark & \checkmark & \checkmark \\
+\bottomrule
+\end{tabular}%
+}
+\end{small}
+\end{table}
+
+\subsection{Task-Oriented Agents (Text)}
+
+\taubench{}~\cite{yao_-bench_2024} evaluates agents on customer service tasks with verifiable database outcomes (\S\ref{sec:intro}). \tautwobench{}~\cite{barres_2-bench_2025} extends this to dual-control settings where users also have tool access. Both operate entirely in text---no acoustic variation or real-time constraints.
+
+\subsection{Conversational Dynamics}
+
+Full-Duplex-Bench~\cite{lin_full-duplex-bench_2025} introduced automatic metrics for pause handling, backchanneling, turn-taking, and interruption management. Full-Duplex-Bench-V2~\cite{lin_full-duplex-bench-v2_2025} extends this to multi-turn evaluation with task families (daily scenarios, correction handling, entity tracking, safety) and an automated examiner that enforces staged goals. However, these tasks remain scripted scenarios rather than real tool calls against databases. Full-Duplex-Bench-V2's real-time streaming approach also limits fine-grained control---interruption, backchannel, and yield timing are not precisely configurable. In contrast, our tick-based orchestrator enables configurable turn-taking behavior, making it easy to increase or decrease realism and difficulty. Talking Turns~\cite{arora_talking_2025} evaluates turn-taking using a model trained on human judgments, revealing that current models interrupt inappropriately and rarely backchannel.
+
+\subsection{Speech \& Audio Understanding}
+
+VoiceBench~\cite{chen_voicebench_2024} evaluates ASR robustness across diverse speaker characteristics and acoustic environments. VocalBench~\cite{liu_vocalbench_2026} evaluates vocal conversational abilities—response quality, acoustic performance, and conversational flow. Audio MultiChallenge~\cite{gosai_audio_2025} provides multi-turn context but evaluates only a single model response, testing memory and coherence with disfluencies. Related work addresses prosody, disfluencies, and speaker diversity in natural speech~\cite{zhang_wildspeech-bench_2025, wang_audiobench_2025}. Beyond robustness, paralinguistic benchmarks~\cite{jiang_s2s-arena_2025, yang_paras2s_2025, ao_sd-eval_2025} evaluate understanding of emotion, accent, and prosody. VoiceAgentBench~\cite{jain2026voiceagentbenchvoiceassistantsready} extends this line to tool use, but plays pre-recorded TTS queries to the model rather than evaluating fully agentic, dynamically grounded task solving. While these benchmarks reveal important capability gaps, they evaluate speech processing largely in isolation from the complexity of grounded, multi-turn environment interaction.
+
+\subsection{The Missing Intersection}
+
+As Table~\ref{tab:related-comparison} shows, no existing benchmark combines all three dimensions. \tauvoice{} addresses this gap.

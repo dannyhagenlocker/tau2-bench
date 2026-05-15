@@ -1,0 +1,30 @@
+\section{Simulation Parameters}
+\label{app:hyperparams}
+
+This section documents the user simulator parameters not covered in the main text.
+
+\subsection{Turn-Taking Thresholds}
+
+Table~\ref{tab:turn-taking-thresholds} shows the turn-taking thresholds.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrl}
+\toprule
+\textbf{Parameter} & \textbf{Default} & \textbf{Description} \\
+\midrule
+Wait-to-respond (other) & 1.0s & Min silence from agent before user responds \\
+Wait-to-respond (self) & 5.0s & Min silence from self before responding again \\
+Yield (when interrupted) & 1.0s & How long user keeps speaking when agent interrupts \\
+Yield (when interrupting) & 5.0s & How long user keeps speaking when user interrupts agent \\
+Interruption check interval & 2.0s & Interval for LLM interruption checks \\
+Backchannel check interval & 2.0s & Interval for LLM backchannel checks \\
+\bottomrule
+\end{tabular}
+\caption{Turn-taking thresholds controlling conversation flow.}
+\label{tab:turn-taking-thresholds}
+\end{table}
+
+\paragraph{Backchanneling.} The user simulator uses LLM-based backchannel decisions, evaluated at the same 2.0s interval as interruption checks. The LLM determines whether to emit a backchannel (e.g., ``mm-hmm'', ``uh-huh'') based on conversation context.
+

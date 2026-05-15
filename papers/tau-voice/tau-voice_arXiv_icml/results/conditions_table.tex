@@ -1,0 +1,27 @@
+\begin{table}[h]
+\caption{Speech complexity conditions: Clean vs Realistic.}
+\label{tab:conditions}
+\centering
+\begin{small}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Category} & \textbf{Setting} & \textbf{Clean} & \textbf{Realistic} \\
+\midrule
+\multirow{1}{*}{Accents} & Personas & American & Diverse accents \\
+\midrule
+\multirow{5}{*}{Audio/Channel} & Background noise & None & Indoor/outdoor \\
+ & Burst noise & None & $\sim$1/min \\
+ & Frame drops & None & $\sim$2.0\% (G-E model) \\
+ & Telephony & G.711 $\mu$-law 8kHz & G.711 $\mu$-law 8kHz \\
+ & Muffling & None & Dynamic \\
+\midrule
+\multirow{4}{*}{Turn-Taking} & Involuntary sounds & None & Coughs, sneezes \\
+ & Non agent-directed speech & None & ``hold on'', ``one sec'' \\
+ & Interruptions & None & LLM-based \\
+ & Backchanneling & None & LLM-based \\
+\bottomrule
+\end{tabular}%
+}
+\end{small}
+\end{table}
