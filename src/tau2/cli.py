@@ -8,6 +8,7 @@ from tau2.config import (
     DEFAULT_INTEGRATION_DURATION_SECONDS,
     DEFAULT_INTERRUPTION_CHECK_INTERVAL_SECONDS,
     DEFAULT_LLM_AGENT,
+    DEFAULT_LLM_EVAL_USER_SIMULATOR,
     DEFAULT_LLM_LOG_MODE,
     DEFAULT_LLM_TEMPERATURE_AGENT,
     DEFAULT_LLM_TEMPERATURE_USER,
@@ -413,6 +414,12 @@ def add_run_args(parser):
         help="Review mode when --auto-review is enabled: 'full' (agent+user errors, default) or 'user' (user simulator only).",
     )
     parser.add_argument(
+        "--review-model",
+        type=str,
+        default=DEFAULT_LLM_EVAL_USER_SIMULATOR,
+        help=f"LLM model to use for review calls. Default is {DEFAULT_LLM_EVAL_USER_SIMULATOR}.",
+    )
+    parser.add_argument(
         "--hallucination-retries",
         type=int,
         default=3,
@@ -648,6 +655,7 @@ def main():
             auto_resume=args.auto_resume,
             auto_review=args.auto_review,
             review_mode=args.review_mode,
+            review_model=args.review_model,
             hallucination_retries=args.hallucination_retries,
             retrieval_config=args.retrieval_config,
             retrieval_config_kwargs=args.retrieval_config_kwargs,
@@ -809,6 +817,12 @@ def main():
         "--log-llm",
         action="store_true",
         help="Log LLM request/response for each review call",
+    )
+    review_parser.add_argument(
+        "--review-model",
+        type=str,
+        default=DEFAULT_LLM_EVAL_USER_SIMULATOR,
+        help=f"LLM model to use for review calls. Default is {DEFAULT_LLM_EVAL_USER_SIMULATOR}.",
     )
     review_parser.set_defaults(func=lambda args: run_review(args))
 
@@ -1037,6 +1051,7 @@ def run_review(args):
             limit=args.limit,
             task_ids=args.task_ids,
             log_llm=args.log_llm,
+            review_model=args.review_model,
         )
 
 
