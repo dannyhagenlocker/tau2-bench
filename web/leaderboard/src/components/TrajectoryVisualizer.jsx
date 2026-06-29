@@ -578,7 +578,7 @@ const TrajectoryVisualizer = () => {
                   <optgroup label="τ-voice (Voice)">
                     {submissions.filter(s => s.modality === 'voice').map(s => (
                       <option key={s.dir} value={s.dir}>
-                        {s.model_name} ({s.model_organization}){s.submission_type === 'custom' ? ' [Custom]' : ''}{s.user_simulator ? ` — user sim: ${s.user_simulator}` : ''}
+                        {s.model_name} ({s.model_organization}){s.submission_type === 'custom' ? ` [Custom]${s.user_simulator ? ` — user sim: ${s.user_simulator}` : ''}` : ''}
                       </option>
                     ))}
                   </optgroup>
