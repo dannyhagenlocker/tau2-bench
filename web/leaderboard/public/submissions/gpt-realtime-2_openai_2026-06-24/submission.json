@@ -2,8 +2,8 @@
   "model_name": "gpt-realtime-2",
   "model_organization": "OpenAI",
   "submitting_organization": "Sierra",
-  "submission_date": "2026-06-24",
-  "submission_type": "standard",
+  "submission_date": "2026-06-29",
+  "submission_type": "custom",
   "modality": "voice",
   "contact_info": {
     "email": "victor@sierra.ai",
@@ -11,27 +11,28 @@
   },
   "results": {
     "retail": {
-      "pass_1": 47.36842105263158
+      "pass_1": 50.0
     },
     "airline": {
-      "pass_1": 58.0
+      "pass_1": 66.0
     },
     "telecom": {
-      "pass_1": 21.92982456140351
+      "pass_1": 37.719298245614034
     }
   },
   "reasoning_effort": "xhigh",
   "is_new": true,
   "trajectories_available": true,
   "trajectory_files": {
-    "airline": "airline_regular_openai_gpt-realtime-2",
-    "retail": "retail_regular_openai_gpt-realtime-2",
-    "telecom": "telecom_regular_openai_gpt-realtime-2"
+    "airline": "airline_regular_openai_gpt-realtime-2_usersim-gpt-5.5-xhigh",
+    "retail": "retail_regular_openai_gpt-realtime-2_usersim-gpt-5.5-xhigh",
+    "telecom": "telecom_regular_openai_gpt-realtime-2_usersim-gpt-5.5-xhigh"
   },
   "methodology": {
-    "evaluation_date": "2026-06-24",
+    "evaluation_date": "2026-06-29",
     "tau2_bench_version": "1.0.0",
-    "user_simulator": "v1.0",
+    "user_simulator": "gpt-5.5-2026-04-23 (reasoning_effort=xhigh) — non-standard custom user simulator (the standard voice user simulator is v1.0 / gpt-4.1)",
+    "notes": "Custom submission: identical to the standard gpt-realtime-2 voice evaluation (audio-native, regular speech complexity, ElevenLabs eleven_v3 TTS, agent reasoning_effort=xhigh) EXCEPT the user simulator LLM is gpt-5.5-2026-04-23 run at reasoning_effort=xhigh instead of the leaderboard-standard v1.0 (gpt-4.1). Because telecom's user simulator uses function tools, gpt-5.5 rejects reasoning_effort=none with tools, so all domains use xhigh for consistency. Not comparable to standard-user-simulator leaderboard entries.",
     "verification": {
       "modified_prompts": false,
       "omitted_questions": false
