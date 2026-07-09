@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-opt/subset_spec.schema.json",
+  "title": "SubsetSpec",
+  "type": "object",
+  "required": ["contract_version", "mode", "task_ids"],
+  "properties": {
+    "contract_version": { "type": "string", "const": "1.0" },
+    "mode": {
+      "type": "string",
+      "enum": ["oracle", "cluster", "proposal"]
+    },
+    "run_name": { "type": "string" },
+    "baseline_run": { "type": "string" },
+    "cluster_id": { "type": ["string", "null"] },
+    "proposal_id": { "type": ["string", "null"] },
+    "task_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Full ordered list of tasks to run"
+    },
+    "target_task_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "control_task_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "oracle_stable_pass_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "oracle_representative_fail_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "created_at": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}
