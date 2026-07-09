@@ -26,6 +26,22 @@ export function appendChildren(el, children) {
   }
 }
 
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+// SVG-namespaced hyperscript (createElement won't render SVG nodes).
+export function hs(tag, props, ...children) {
+  const el = document.createElementNS(SVG_NS, tag);
+  if (props) {
+    for (const [k, v] of Object.entries(props)) {
+      if (v == null || v === false) continue;
+      if (k.startsWith("on") && typeof v === "function") el.addEventListener(k.slice(2).toLowerCase(), v);
+      else el.setAttribute(k, v === true ? "" : v);
+    }
+  }
+  appendChildren(el, children);
+  return el;
+}
+
 export function mount(root, node) {
   root.replaceChildren(node);
 }

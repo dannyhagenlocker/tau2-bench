@@ -6,16 +6,19 @@ import { OverviewPage } from "./pages/overview.js";
 import { ClustersPage } from "./pages/clusters.js";
 import { TracesPage } from "./pages/traces.js";
 import { ComparePage } from "./pages/compare.js";
+import { EmbeddingPage } from "./pages/embedding.js";
 
 const NAV = [
   ["/overview", "Overview"],
   ["/clusters", "Clusters"],
+  ["/embedding", "Embedding"],
   ["/traces", "Traces"],
   ["/compare", "Compare runs"],
 ];
 const PAGES = {
   "/overview": OverviewPage,
   "/clusters": ClustersPage,
+  "/embedding": EmbeddingPage,
   "/traces": TracesPage,
   "/compare": ComparePage,
 };

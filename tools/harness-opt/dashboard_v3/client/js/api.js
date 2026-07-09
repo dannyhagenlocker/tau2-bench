@@ -12,6 +12,7 @@ export const api = {
   runs: () => getJSON("/api/runs"),
   summary: (run) => getJSON(`/api/runs/${enc(run)}/summary`),
   tasks: (run) => getJSON(`/api/runs/${enc(run)}/tasks`),
+  embedding: (run) => getJSON(`/api/runs/${enc(run)}/embedding`),
   summaryMd: (run) => getJSON(`/api/runs/${enc(run)}/summary_md`),
   sim: (run, sid) => getJSON(`/api/runs/${enc(run)}/sims/${enc(sid)}`),
 };
