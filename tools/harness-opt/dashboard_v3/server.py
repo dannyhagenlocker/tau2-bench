@@ -52,6 +52,12 @@ def create_app() -> FastAPI:
             raise HTTPException(404, f"run not found: {run}")
         return data.task_rows(run)
 
+    @app.get("/api/runs/{run}/embedding")
+    def api_embedding(run: str):
+        if not data.report_exists(run):
+            raise HTTPException(404, f"run not found: {run}")
+        return data.embedding(run)
+
     @app.get("/api/runs/{run}/sims/{sim_id}")
     def api_sim(run: str, sim_id: str):
         detail = data.sim_detail(run, sim_id)
