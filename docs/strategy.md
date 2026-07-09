@@ -123,7 +123,26 @@ Variant sweep (interest 4, feasibility 2) stays in considerations — viable if 
 
 ## Clustering & analysis engine
 
-### Layered approach (always run all layers)
+> **⚠️ SUPERSEDED (2026-07-09).** The 4-layer L0/L1/L2/L3 signature plan below is
+> the *original* design and is kept for history. The engine that actually ships
+> is materially different — embedding-based clustering (neural `st` embeddings
+> over a text document, auto-selected distance threshold) with a deterministic
+> **root-cause mechanism** as the primary axis, validated against hand labels.
+> **For what currently stands, read
+> [`phases/phase-0/clustering-engine.md`](phases/phase-0/clustering-engine.md).**
+> What changed vs the plan below:
+> - Primary axis is **mechanism** (`bailed_transfer`, `wrong_params`, …), not the
+>   DB/NL symptom split; `mixed` is retired as a primary category (it was largely
+>   an artifact).
+> - Clustering is a single **embedding** step (document → `st` → agglomerative,
+>   auto-threshold), not staged L1→L2 within L0 buckets. The old exact-match
+>   "signature" grouping is retained only as a secondary `--method signature`.
+> - Embedding model is **resolved**: offline neural all-MiniLM-L6-v2 via a
+>   pure-NumPy backend (`lib/minilm_numpy.py`); no API/torch needed.
+> - Defaults were chosen by an **ablation against hand-labeled root causes**, not
+>   assumed.
+
+### (Original plan) Layered approach
 
 ```
 Layer 0: Deterministic taxonomy (free, reproducible)

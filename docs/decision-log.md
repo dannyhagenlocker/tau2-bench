@@ -108,6 +108,12 @@ Format: **Date · Decision · Rationale · Alternatives considered**
 
 ## 2026-07-08 — Clustering stack
 
+> **⚠️ SUPERSEDED (2026-07-09).** Replaced by the embedding engine + mechanism
+> axis (see the three 2026-07-09 clustering entries below and
+> `docs/phases/phase-0/clustering-engine.md`). The L1/L2 staging within L0
+> buckets is gone; clustering is a single embedding step, and the primary axis is
+> root-cause mechanism, not the DB/NL symptom split.
+
 **Decision:** Four layers — L0 deterministic, L1 structured features, L2 structured embeddings, L3 LLM labels on representatives only.
 
 **Rationale:** Reproducible baseline + semantic grouping without embedding irrelevant item semantics.
@@ -127,6 +133,13 @@ Format: **Date · Decision · Rationale · Alternatives considered**
 ---
 
 ## 2026-07-08 — Mixed failures
+
+> **⚠️ SUPERSEDED (2026-07-09).** Two corrections: (1) retail gates on
+> `DB`+`NL_ASSERTION`, not COMMUNICATE (fixed in the P0 taxonomy). (2) `mixed`
+> is no longer a primary category — it was largely an artifact (DB+NL both fail
+> when the agent does nothing on a task that has NL assertions). The primary axis
+> is now root-cause **mechanism**; `failure_type` (incl. `mixed`) is retained only
+> as a secondary reward-basis attribute.
 
 **Decision:** DB + COMMUNICATE failures are a **distinct cluster category** in L0.
 
@@ -245,6 +258,95 @@ Format: **Date · Decision · Rationale · Alternatives considered**
 
 ---
 
+## 2026-07-09 — Clustering signals P1–P4 (fix taxonomy + structured signals)
+
+**Decision:** Corrected the retail failure taxonomy to gate on `DB`+`NL_ASSERTION`
+(P0), and added structured per-trace signals: **P1** offline DB-diff signature
+(gold vs predicted env replay → `missed/wrong/extra` abstracted paths), **P2**
+normalized tool chains (names only), **P3** denoised NL-assertion signatures, and
+**P4** signature-based grouping replacing exact tool-path keys.
+
+**Rationale:** The DB-diff signature captures *what diverged in the DB* (the
+scorer's actual basis) far more precisely than tool-path fingerprints; it cut the
+baseline from 28→20 clusters and 79%→60% singletons.
+
+**Outcome:** `lib/db_diff.py`, signals in `lib/trace_parser.py`. This became the
+`--method signature` engine once embeddings landed.
+
+---
+
+## 2026-07-09 — Embedding clustering engine (default) + offline neural backend
+
+**Decision:** Default clustering is now an **embedding engine**
+(`lib/embedding_cluster.py`): trace → text document (core spine + denoised last
+agent message) → embedding → agglomerative cosine clustering. The embedder is
+pluggable; the default is **neural `st` (all-MiniLM-L6-v2)**, run via a
+**pure-NumPy forward pass over the HF-cached weights** (`lib/minilm_numpy.py`)
+because this box has no torch and no network. Offline fallbacks: `tfidf`, `char`,
+`lsa`. The old signature decision-tree is retained as `--method signature`.
+
+**Rationale:** Membership should be geometry-driven, not a hand-authored
+decision tree. An ablation against hand-labeled root causes
+(`scripts/ablate_document.py` vs `eval/root_cause_labels.*.json`) chose the
+config: **`st` + core+last_message won (ARI 0.70, recovers the 6 root-cause
+classes)** vs tfidf 0.47 / signature 0.20. Neural embeddings are what unlock the
+free-text signals (`last_message` +0.33 V-measure); bag-of-words got ~0 from them.
+Resolves the "embedding model: local vs API" pending decision — offline local, no
+budget cost.
+
+**Alternatives:** sentence-transformers install (blocked — no network); HDBSCAN
+(worse here); keeping signature as default (over-splits: 20 clusters/60%
+singletons).
+
+**Outcome:** Implemented + tested; `clusters.json` carries `method`. Pluggable
+`Embedder` leaves the door open for a real `sentence-transformers` / API embedder.
+
+---
+
+## 2026-07-09 — Auto-selected distance threshold (cross-run generalization)
+
+**Decision:** The agglomerative distance threshold is **auto-selected per run**:
+scan a loose→tight ladder, take the loosest threshold whose largest cluster's
+share ≤ **0.45** (`--max-cluster-share`). A fixed threshold remains available.
+
+**Rationale:** A single fixed threshold didn't transfer — the weak-model run
+(`gpt54mini`, 167 failures) collapsed 74% of failures into one blob at 0.3. The
+cap (tuned to 0.45 against the labeled run) reproduces the ARI-optimal 6-cluster
+result on the tuning run *and* fixes the blob (→ 30 clusters, 22% largest). Only
+re-clusters cached vectors, so it's sub-second.
+
+**Outcome:** `_auto_select_labels` in `lib/embedding_cluster.py`; default across
+`cluster`/`analyze`/`cluster-compare`.
+
+---
+
+## 2026-07-09 — Primary axis = root-cause mechanism (not DB/NL symptom)
+
+**Decision:** The primary taxonomy axis is a deterministic **root-cause
+mechanism** (`classify_mechanism`): `bailed_transfer`, `wrong_params`,
+`incomplete_multitask`, `stalled_no_action`, `identification_failure`,
+`comm_miss`, `premature_termination`, `other`. It drives L0 buckets and cluster
+names. `failure_type` (db_only/nl_only/mixed) is demoted to a secondary
+reward-basis attribute; `mixed` is no longer a primary category.
+
+**Rationale:** The DB/NL symptom axis is scorer-exact but cross-cuts real causes
+(the dominant `bailed_transfer` was scattered across all three symptom buckets;
+`mixed` was an artifact). Validated: the deterministic rule agrees with
+hand-labeled root causes **91% (33/36)**, perfect on the two dominant classes.
+Adding mechanism to the embedding document did **not** improve clustering
+(ablation), so it's a labeling axis only — clustering membership stays
+embedding-driven.
+
+**Alternatives:** keep symptom axis (blurs causes); make mechanism a clustering
+feature (no ablation gain); free-form cause labels (not reproducible).
+
+**Outcome:** `classify_mechanism` + `mechanism_class`/`Cluster.mechanism` fields;
+ground truth in `eval/root_cause_labels.baseline-gpt55-t2.json`. Revealed
+`gpt54mini` is 66% `stalled_no_action` — hidden by the old `db_only` bucket.
+Handoff written for the dashboard to surface the mechanism axis.
+
+---
+
 ## Template for future entries
 
 ```
@@ -265,8 +367,8 @@ Format: **Date · Decision · Rationale · Alternatives considered**
 
 | Question | Options | Target date |
 |----------|---------|-------------|
-| Dashboard framework | Streamlit (default) vs FastAPI+React | Phase 1 start |
-| Embedding model | local vs API | Phase 0.3 |
+| ~~Dashboard framework~~ | **Resolved:** FastAPI + JS SPA (`dashboard_v3`); Streamlit v1 + static v2 also exist | — |
+| ~~Embedding model~~ | **Resolved:** offline neural all-MiniLM-L6-v2 (pure-NumPy, no API) | — |
 | Oracle task ids | derived from baseline | After baseline run |
 | Custom agent name | TBD | First harness change |
 | Generation 2 budget | proceed if Δ gen1 > X% and spend < $40 | After gen 1 |

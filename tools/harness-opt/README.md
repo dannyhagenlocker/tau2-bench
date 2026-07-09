@@ -21,6 +21,27 @@ uv run python tools/harness-opt/cli.py build-subset --run my-run --mode oracle
 uv run python tools/harness-opt/cli.py build-subset --run my-run --mode cluster --cluster c_000
 ```
 
+## Clustering engine
+
+Failures are clustered by the **embedding engine** (default): each failing trace
+becomes a text document, embedded with neural `st` (offline all-MiniLM-L6-v2 via
+`lib/minilm_numpy.py` — no torch/network needed), then clustered with
+agglomerative cosine + an auto-selected distance threshold. Clusters are named
+and bucketed by a deterministic **root-cause mechanism** (`bailed_transfer`,
+`wrong_params`, `stalled_no_action`, …); the DB/NL `failure_type` is a secondary
+attribute. The legacy exact-match engine is `--method signature`.
+
+```bash
+# Default (embedding); pick engine / embedder explicitly:
+cli.py cluster --run my-run --method embedding --embedder st
+cli.py cluster-compare --run my-run    # signature vs embedding agreement (ARI)
+cli.py cluster-sweep --run my-run      # embedder × threshold sweep (silhouette)
+```
+
+Evaluation artifacts and hand-labeled ground truth live in
+`tools/harness-opt/eval/` (`ablation.*.md`, `root_cause_labels.*.json`). Design
+detail: [`docs/phases/phase-0/clustering-engine.md`](../../docs/phases/phase-0/clustering-engine.md).
+
 ## Baseline handoff
 
 When `baseline-gpt55-t2` completes (2 trials):
