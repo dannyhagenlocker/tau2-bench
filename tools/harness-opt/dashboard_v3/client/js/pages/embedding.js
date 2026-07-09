@@ -2,7 +2,6 @@ import { clear, h } from "../dom.js";
 import { api } from "../api.js";
 import { store } from "../store.js";
 import { navigate } from "../router.js";
-import { ftypeColor } from "../components/widgets.js";
 
 export function EmbeddingPage() {
   const wrap = h("div", { class: "page" });
@@ -40,6 +39,23 @@ export function EmbeddingPage() {
 
 const FONT = { family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', size: 11, color: "#1f2430" };
 
+// Distinct categorical palette so each cluster gets its own stable color,
+// shared between the centroid map and the sim scatter.
+const CLUSTER_PALETTE = [
+  "#3b5bfd", "#e8710a", "#16a34a", "#d1338a", "#7c3aed",
+  "#0891b2", "#ca8a04", "#dc2626", "#0d9488", "#9333ea",
+  "#2563eb", "#ea580c", "#059669", "#db2777", "#6d28d9",
+  "#0284c7", "#b45309", "#e11d48", "#15803d", "#8b5cf6",
+];
+
+function clusterColorMap(e) {
+  const m = {};
+  (e.clusters || []).forEach((c, i) => {
+    m[c.id] = CLUSTER_PALETTE[i % CLUSTER_PALETTE.length];
+  });
+  return m;
+}
+
 function plotLayout(showLegend) {
   return {
     margin: { l: 46, r: 14, t: 10, b: 42 },
@@ -68,6 +84,7 @@ function renderPlot(div, data, layout, onClick) {
 
 function centroidPanel(e) {
   const div = h("div", { class: "plot" });
+  const color = clusterColorMap(e);
   const maxCount = Math.max(...e.clusters.map((c) => c.count));
   const trace = {
     type: "scatter",
@@ -79,7 +96,7 @@ function centroidPanel(e) {
     textfont: { color: "#fff", size: 10 },
     marker: {
       size: e.clusters.map((c) => 12 + (Math.sqrt(c.count) / Math.sqrt(maxCount)) * 40),
-      color: e.clusters.map((c) => ftypeColor(c.failure_type)),
+      color: e.clusters.map((c) => color[c.id]),
       opacity: 0.82,
       line: { color: "#fff", width: 1 },
     },
@@ -99,25 +116,29 @@ function centroidPanel(e) {
 
 function scatterPanel(e) {
   const div = h("div", { class: "plot" });
-  const byType = {};
-  (e.points || []).forEach((p) => (byType[p.failure_type] = byType[p.failure_type] || []).push(p));
-  const traces = Object.entries(byType).map(([t, pts]) => ({
+  const color = clusterColorMap(e);
+  const pts = e.points || [];
+  const trace = {
     type: "scatter",
     mode: "markers",
-    name: t,
     x: pts.map((p) => p.x),
     y: pts.map((p) => p.y),
-    marker: { color: ftypeColor(t), size: 8, opacity: 0.68, line: { color: "#fff", width: 0.5 } },
+    marker: {
+      color: pts.map((p) => color[p.cluster_id] || "#9aa3b2"),
+      size: 8,
+      opacity: 0.75,
+      line: { color: "#fff", width: 0.5 },
+    },
     customdata: pts.map((p) => p.simulation_id),
-    hovertext: pts.map((p) => `task ${p.task_id} · t${p.trial}<br>${p.cluster_id} · ${t}`),
+    hovertext: pts.map((p) => `task ${p.task_id} · t${p.trial}<br>${p.cluster_id} · ${p.failure_type}`),
     hoverinfo: "text",
-  }));
-  renderPlot(div, traces, plotLayout(true), (ev) => navigate("/traces", { a: ev.points[0].customdata }));
+  };
+  renderPlot(div, [trace], plotLayout(false), (ev) => navigate("/traces", { a: ev.points[0].customdata }));
   return h(
     "div",
     { class: "panel" },
     h("h3", {}, "Sim scatter"),
-    h("div", { class: "muted tiny plot-cap" }, "each point = a failing sim, colored by failure mode (shares the PC space). Click to open the trace."),
+    h("div", { class: "muted tiny plot-cap" }, "each point = a failing sim, colored by its cluster (matches the centroid map). Click to open the trace."),
     div,
   );
 }
