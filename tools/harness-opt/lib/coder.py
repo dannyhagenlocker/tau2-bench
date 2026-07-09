@@ -99,6 +99,19 @@ Rules:
 """
 
 
+def _retry_feedback(error: str) -> str:
+    return (
+        "\n\n## Your previous attempt could not be applied\n"
+        f"Error: {error}\n"
+        "Return corrected JSON (same format). Requirements:\n"
+        "- Each `old_string` must be an EXACT, UNIQUE substring of the current "
+        "file. If a snippet appears more than once, include MORE surrounding "
+        "lines (e.g. the enclosing function/def or a nearby unique line) so it "
+        "matches exactly once.\n"
+        "- Only edit allowlisted files."
+    )
+
+
 def _extract_json(content: str) -> Optional[dict]:
     content = (content or "").strip()
     start, end = content.find("{"), content.rfind("}")
@@ -157,21 +170,22 @@ class OpenAICoder(CoderBackend):
 
     name = "openai"
 
-    def __init__(self, model: str = DEFAULT_PROPOSER_MODEL):
+    def __init__(self, model: str = DEFAULT_PROPOSER_MODEL, max_attempts: int = 3):
         self._model = model
+        self._max_attempts = max_attempts
 
     def available(self) -> bool:
         return bool(os.environ.get("OPENAI_API_KEY"))
 
     def run(self, prompt: str, cwd: Path) -> CoderResult:
-        from lib.allowlist import ALLOWED_FILES, allowlist_for_prompt, assert_allowed
+        from lib.allowlist import ALLOWED_FILES, allowlist_for_prompt, is_allowed
 
         file_blocks = []
         for rel in sorted(ALLOWED_FILES):
             fp = cwd / rel
             if fp.exists():
                 file_blocks.append(f"### FILE: {rel}\n```python\n{fp.read_text()}\n```")
-        full_prompt = "\n\n".join(
+        base_prompt = "\n\n".join(
             [
                 prompt,
                 allowlist_for_prompt(),
@@ -180,70 +194,78 @@ class OpenAICoder(CoderBackend):
             ]
         )
 
-        try:
-            from tau2.data_model.message import UserMessage
-            from tau2.utils.llm_utils import generate
+        total_cost = 0.0
+        last_content = ""
+        summary = ""
+        feedback = ""
+        last_err = "no attempts made"
 
-            resp = generate(
-                model=self._model,
-                messages=[UserMessage(role="user", content=full_prompt)],
-                call_name="harness_proposal",
-                temperature=0,
-            )
-        except Exception as exc:  # noqa: BLE001 - surface as startup failure
-            return CoderResult(
-                backend=self.name,
-                ok=False,
-                error=f"generate failed: {exc}",
-                model=self._model,
-            )
+        for _ in range(self._max_attempts):
+            try:
+                from tau2.data_model.message import UserMessage
+                from tau2.utils.llm_utils import generate
 
-        content = resp.content or ""
-        cost = getattr(resp, "cost", None)
-        data = _extract_json(content)
-        if data is None:
-            return CoderResult(
-                backend=self.name,
-                ok=False,
-                error="could not parse JSON edits from model output",
-                model=self._model,
-                cost=cost,
-                raw_stdout=content,
-            )
-        edits = data.get("edits") or []
-        summary = data.get("summary") or data.get("hypothesis") or ""
-        if not edits:
-            return CoderResult(
-                backend=self.name,
-                ok=False,
-                error="model returned no edits",
-                summary=summary,
-                model=self._model,
-                cost=cost,
-                raw_stdout=content,
-            )
-        try:
-            assert_allowed([e.get("path", "") for e in edits])
-        except PermissionError as exc:
-            return CoderResult(
-                backend=self.name,
-                ok=False,
-                error=str(exc),
-                summary=summary,
-                model=self._model,
-                cost=cost,
-                raw_stdout=content,
-            )
-        ok, err, touched = _apply_edits(cwd, edits)
+                resp = generate(
+                    model=self._model,
+                    messages=[UserMessage(role="user", content=base_prompt + feedback)],
+                    call_name="harness_proposal",
+                    temperature=0,
+                )
+            except Exception as exc:  # noqa: BLE001 - surface as run failure
+                return CoderResult(
+                    backend=self.name,
+                    ok=False,
+                    error=f"generate failed: {exc}",
+                    model=self._model,
+                    cost=total_cost or None,
+                )
+
+            last_content = resp.content or ""
+            total_cost += getattr(resp, "cost", 0.0) or 0.0
+            data = _extract_json(last_content)
+            if data is None:
+                last_err = "could not parse JSON edits from model output"
+                feedback = _retry_feedback(last_err)
+                continue
+            summary = data.get("summary") or data.get("hypothesis") or summary
+            edits = data.get("edits") or []
+            if not edits:
+                last_err = "model returned no edits"
+                feedback = _retry_feedback(last_err)
+                continue
+
+            bad = [
+                e.get("path", "") for e in edits if not is_allowed(e.get("path", ""))
+            ]
+            if bad:
+                last_err = (
+                    f"edits target non-allowlisted files: {', '.join(sorted(bad))}"
+                )
+                feedback = _retry_feedback(last_err)
+                continue
+
+            ok, err, touched = _apply_edits(cwd, edits)
+            if ok:
+                return CoderResult(
+                    backend=self.name,
+                    ok=True,
+                    summary=summary,
+                    model=self._model,
+                    cost=total_cost or None,
+                    edited_paths=touched,
+                    raw_stdout=last_content,
+                )
+            last_err = err or "edits could not be applied"
+            feedback = _retry_feedback(last_err)
+
         return CoderResult(
             backend=self.name,
-            ok=ok,
+            ok=False,
+            error=f"failed after {self._max_attempts} attempts: {last_err}",
             summary=summary,
-            error=err,
             model=self._model,
-            cost=cost,
-            edited_paths=touched,
-            raw_stdout=content,
+            cost=total_cost or None,
+            raw_stdout=last_content,
         )
 
 
