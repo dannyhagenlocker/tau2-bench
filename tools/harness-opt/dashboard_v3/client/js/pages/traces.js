@@ -2,7 +2,7 @@ import { clear, h } from "../dom.js";
 import { getSim } from "../api.js";
 import { store } from "../store.js";
 import { parseHash } from "../router.js";
-import { badge, ftype, spinner } from "../components/widgets.js";
+import { ftype, spinner } from "../components/widgets.js";
 import { Waterfall } from "../components/waterfall.js";
 import { DiffView } from "../components/diff.js";
 
@@ -12,9 +12,32 @@ export function TracesPage() {
   const s = store.summary;
   const { params } = parseHash();
   const sel = [params.get("a"), params.get("b")].filter(Boolean).slice(0, MAX_SEL);
-  const state = { sel, diff: params.get("diff") === "1" && sel.length === 2, hideEqual: false, showReason: false };
+  const state = {
+    sel,
+    diff: params.get("diff") === "1" && sel.length === 2,
+    hideEqual: false,
+    showReason: false,
+    mode: "clusters", // 'clusters' | 'tasks'
+    flakyOnly: false,
+  };
   const openClusters = new Set();
+  const openTasks = new Set();
   let filter = "";
+
+  // ---- derived: sims grouped by task; flaky lookup ----
+  const byTask = {};
+  for (const [sid, m] of Object.entries(s.sims)) {
+    (byTask[m.task_id] = byTask[m.task_id] || []).push(sid);
+  }
+  for (const t of Object.keys(byTask)) {
+    byTask[t].sort((a, b) => (s.sims[a].trial ?? 0) - (s.sims[b].trial ?? 0));
+  }
+  const taskIds = Object.keys(byTask).sort((a, b) => {
+    const na = Number(a), nb = Number(b);
+    return Number.isNaN(na) || Number.isNaN(nb) ? String(a).localeCompare(b) : na - nb;
+  });
+  const flakyByTask = {};
+  (s.flaky || []).forEach((f) => (flakyByTask[f.task_id] = f));
 
   const wrap = h("div", { class: "page traces" });
   const left = h("div", { class: "panel trace-picker" });
@@ -40,60 +63,81 @@ export function TracesPage() {
     renderMain();
     buildLeft();
   }
-  function loadFlaky(f) {
-    state.sel = [f.pass_sim, f.fail_sim];
-    state.diff = true;
+  function compare(a, b, diff) {
+    state.sel = [a, b];
+    state.diff = !!diff;
     renderMain();
     buildLeft();
   }
 
-  // ---------- left picker ----------
-  function buildLeft() {
-    clear(left);
-    left.appendChild(
-      h("input", {
-        class: "search",
-        placeholder: "filter tasks / clusters / signature…",
-        value: filter,
-        oninput: (e) => {
-          filter = e.target.value;
-          buildLeft();
-          left.querySelector(".search").focus();
-        },
-      }),
-    );
-    const f = filter.toLowerCase();
-
-    if ((s.flaky || []).length) {
-      left.appendChild(h("div", { class: "sec-title" }, `⚡ Flaky — pass vs fail (${s.flaky.length})`));
-      s.flaky.forEach((fl) => {
-        if (f && !String(fl.task_id).toLowerCase().includes(f)) return;
-        left.appendChild(
-          h(
-            "div",
-            { class: "flaky", onClick: () => loadFlaky(fl) },
-            h("span", { class: "lbl" }, ["task ", h("b", {}, String(fl.task_id)), ` · ${fl.n_trials} trials`]),
-            h("span", { class: "go" }, "compare →"),
-          ),
-        );
-      });
-    }
-
-    left.appendChild(h("div", { class: "sec-title" }, `Clusters (${s.clusters.length})`));
+  // ---------- shared member row ----------
+  function memberRow(sid, primaryText) {
+    const m = s.sims[sid];
+    if (!m) return null;
+    const inSel = state.sel.includes(sid);
     const full = state.sel.length >= MAX_SEL;
+    return h(
+      "div",
+      { class: "member" + (inSel ? " sel" : "") },
+      ftype(m.failure_type),
+      h("span", { class: "lbl" }, primaryText),
+      h(
+        "span",
+        {
+          class: "addbtn" + (inSel ? " on" : ""),
+          title: inSel ? "remove from view" : full ? "view is full (max 2)" : "add to comparison",
+          onClick: () => (inSel ? remove(sid) : add(sid)),
+        },
+        inSel ? "✓" : "+",
+      ),
+    );
+  }
+
+  // ---------- left: segmented control + toggle ----------
+  function segmented() {
+    const seg = h("div", { class: "seg" });
+    [["clusters", "Clusters"], ["tasks", "Tasks"]].forEach(([m, label]) => {
+      seg.appendChild(
+        h(
+          "button",
+          {
+            class: state.mode === m ? "on" : "",
+            onClick: () => { state.mode = m; buildLeft(); },
+          },
+          label,
+        ),
+      );
+    });
+    return seg;
+  }
+
+  function toggleSwitch(label, on, onClick) {
+    return h(
+      "label",
+      { class: "toggle" + (on ? " on" : ""), onClick },
+      h("span", { class: "toggle-track" }, h("span", { class: "toggle-knob" })),
+      h("span", { class: "toggle-lbl" }, label),
+    );
+  }
+
+  function taskStatus(sims) {
+    const passN = sims.filter((sid) => s.sims[sid].reward >= 0.999).length;
+    const kind = passN === sims.length ? "pass" : passN === 0 ? "fail" : "flaky";
+    return { passN, total: sims.length, kind };
+  }
+
+  function buildClusters(container, f) {
+    container.appendChild(h("div", { class: "sec-title" }, `Failure clusters (${s.clusters.length})`));
     s.clusters.forEach((c) => {
-      const hay = (c.id + " " + c.failure_type + " " + c.signature + " " +
-        c.sims.map((x) => s.sims[x] && s.sims[x].task_id).join(" ")).toLowerCase();
+      const hay = (c.id + " " + c.failure_type + " " + c.gloss + " " + c.signature + " " +
+        c.sims.map((x) =>           s.sims[x] && s.sims[x].task_id).join(" ")).toLowerCase();
       if (f && !hay.includes(f)) return;
       const isOpen = openClusters.has(c.id);
       const head = h(
         "div",
         {
           class: "clu-head",
-          onClick: () => {
-            isOpen ? openClusters.delete(c.id) : openClusters.add(c.id);
-            buildLeft();
-          },
+          onClick: () => { isOpen ? openClusters.delete(c.id) : openClusters.add(c.id); buildLeft(); },
         },
         h("span", { class: "caret" }, isOpen ? "▾" : "▸"),
         ftype(c.failure_type),
@@ -102,30 +146,93 @@ export function TracesPage() {
       );
       const box = h("div", { class: "clu-box" }, head);
       if (isOpen) {
+        if (c.gloss) box.appendChild(h("div", { class: "cl-gloss" }, c.gloss));
         c.sims.forEach((sid) => {
           const m = s.sims[sid];
-          if (!m) return;
-          const inSel = state.sel.includes(sid);
+          box.appendChild(memberRow(sid, `task ${m.task_id} · t${m.trial} · r=${m.reward.toFixed(1)}`));
+        });
+      }
+      container.appendChild(box);
+    });
+  }
+
+  function buildTasks(container, f) {
+    taskIds.forEach((task) => {
+      if (state.flakyOnly && !flakyByTask[task]) return;
+      if (f && !String(task).toLowerCase().includes(f)) return;
+      const sims = byTask[task];
+      const { passN, total, kind } = taskStatus(sims);
+      const isFlaky = !!flakyByTask[task];
+      const isOpen = openTasks.has(task);
+      const head = h(
+        "div",
+        {
+          class: "clu-head",
+          onClick: () => { isOpen ? openTasks.delete(task) : openTasks.add(task); buildLeft(); },
+        },
+        h("span", { class: "caret" }, isOpen ? "▾" : "▸"),
+        h("span", { class: "cl-id" }, "task " + task),
+        h("span", { class: "taskstat " + kind, title: `${passN} of ${total} trials passed` }, `${passN}/${total} passed`),
+        isFlaky ? h("span", { class: "flakytag", title: "flaky: some trials pass, some fail" }, "⚡") : null,
+      );
+      const box = h("div", { class: "clu-box" }, head);
+      if (isOpen) {
+        if (isFlaky) {
+          const fl = flakyByTask[task];
           box.appendChild(
             h(
               "div",
-              { class: "member" + (inSel ? " sel" : "") },
-              h("span", { class: "lbl" }, `task ${m.task_id} · t${m.trial} · r=${m.reward.toFixed(1)}`),
-              h(
-                "span",
-                {
-                  class: "addbtn" + (inSel ? " on" : ""),
-                  title: inSel ? "in view" : full ? "view is full (max 2)" : "add to comparison",
-                  onClick: () => (inSel ? remove(sid) : add(sid)),
-                },
-                inSel ? "✓" : "+",
-              ),
+              { class: "task-quick" },
+              h("button", { class: "btn small", onClick: () => compare(fl.pass_sim, fl.fail_sim, true) }, "diff pass ↔ fail"),
             ),
           );
+        } else if (sims.length >= 2) {
+          box.appendChild(
+            h(
+              "div",
+              { class: "task-quick" },
+              h("button", { class: "btn small", onClick: () => compare(sims[0], sims[1], true) }, "diff trial 0 ↔ 1"),
+            ),
+          );
+        }
+        sims.forEach((sid) => {
+          const m = s.sims[sid];
+          box.appendChild(memberRow(sid, `trial ${m.trial} · r=${m.reward.toFixed(1)}`));
         });
       }
-      left.appendChild(box);
+      container.appendChild(box);
     });
+  }
+
+  function buildLeft() {
+    clear(left);
+    const head = h("div", { class: "picker-head" });
+    head.appendChild(
+      h("input", {
+        class: "search",
+        placeholder: state.mode === "tasks" ? "filter tasks…" : "filter clusters / tasks / gloss…",
+        value: filter,
+        oninput: (e) => { filter = e.target.value; buildLeft(); left.querySelector(".search").focus(); },
+      }),
+    );
+    head.appendChild(segmented());
+    if (state.mode === "tasks") {
+      head.appendChild(
+        h(
+          "div",
+          { class: "task-tools" },
+          toggleSwitch("flaky only", state.flakyOnly, () => { state.flakyOnly = !state.flakyOnly; buildLeft(); }),
+          h("span", { class: "muted tiny" }, `${taskIds.length} tasks · ${(s.flaky || []).length} flaky`),
+        ),
+      );
+    }
+    left.appendChild(head);
+
+    const body = h("div", { class: "picker-body" });
+    left.appendChild(body);
+    const f = filter.toLowerCase();
+    if (state.mode === "tasks") buildTasks(body, f);
+    else buildClusters(body, f);
   }
 
   // ---------- main ----------
@@ -135,7 +242,7 @@ export function TracesPage() {
       "div",
       { class: "chip" },
       h("span", { class: "mono" }, (sid || "").slice(0, 8)),
-      ` · t${m.trial} `,
+      ` · task ${m.task_id} t${m.trial} `,
       ftype(m.failure_type),
       ` r=${(m.reward ?? 0).toFixed(2)}`,
       h("span", { class: "chip-x", title: "remove from view", onClick: () => remove(sid) }, "✕"),
@@ -144,16 +251,18 @@ export function TracesPage() {
 
   function controls() {
     const two = state.sel.length === 2;
+    const sameTask = two && s.sims[state.sel[0]] && s.sims[state.sel[1]] && s.sims[state.sel[0]].task_id === s.sims[state.sel[1]].task_id;
     const btn = (label, on, active, disabled) =>
       h("button", { class: "btn" + (active ? " active" : ""), disabled, onClick: on }, label);
     return h(
       "div",
       { class: "controls" },
       ...state.sel.map(chip),
+      two && !sameTask ? h("span", { class: "warn tiny", title: "the two selected traces are from different tasks" }, "⚠ different tasks") : null,
       btn("Diff", () => { state.diff = !state.diff; renderMain(); }, state.diff, !two),
       btn("Hide equal", () => { state.hideEqual = !state.hideEqual; renderMain(); }, state.hideEqual, !(two && state.diff)),
       btn("Failure reason", () => { state.showReason = !state.showReason; renderMain(); }, state.showReason, !state.sel.length),
-      btn("Clear all", clearAll, false, !state.sel.length),
+      btn("Clear", clearAll, false, !state.sel.length),
     );
   }
 
@@ -167,31 +276,19 @@ export function TracesPage() {
     if (bd) rows.push(h("div", { class: "rr-line mono tiny" }, bd));
     if (fr.termination_reason && fr.termination_reason !== "user_stop")
       rows.push(h("div", { class: "rr-line" }, h("b", {}, "termination "), fr.termination_reason));
-    if (sim.db_diff_signature)
-      rows.push(h("div", { class: "rr-line" }, h("b", {}, "DB diff "), h("span", { class: "mono breakall" }, sim.db_diff_signature)));
+    if (sim.db_diff_signature) {
+      rows.push(h("div", { class: "rr-line" }, h("b", {}, "DB diff "), sim.db_gloss || ""));
+      rows.push(h("div", { class: "rr-line mono tiny breakall muted" }, sim.db_diff_signature));
+    }
     (fr.nl_failures || []).forEach((n) =>
-      rows.push(
-        h(
-          "div",
-          { class: "rr-nl" },
-          h("div", { class: "rr-assert" }, "✗ " + n.assertion),
-          n.justification ? h("div", { class: "rr-just" }, n.justification) : null,
-        ),
-      ),
+      rows.push(h("div", { class: "rr-nl" }, h("div", { class: "rr-assert" }, "✗ " + n.assertion), n.justification ? h("div", { class: "rr-just" }, n.justification) : null)),
     );
     (fr.communicate_failures || []).forEach((n) =>
-      rows.push(
-        h(
-          "div",
-          { class: "rr-nl" },
-          h("div", { class: "rr-assert" }, "✗ communicate: " + n.info),
-          n.justification ? h("div", { class: "rr-just" }, n.justification) : null,
-        ),
-      ),
+      rows.push(h("div", { class: "rr-nl" }, h("div", { class: "rr-assert" }, "✗ communicate: " + n.info), n.justification ? h("div", { class: "rr-just" }, n.justification) : null)),
     );
     if (rows.length <= 1 && !sim.db_diff_signature)
-      rows.push(h("div", { class: "muted small" }, "No structured failure reason (passed, or reason not recorded)."));
-    return h("div", { class: "reason" }, h("div", { class: "reason-title" }, "Golden failure reason"), ...rows);
+      rows.push(h("div", { class: "muted small" }, sim.reward >= 0.999 ? "Passed — no failure." : "No structured failure reason recorded."));
+    return h("div", { class: "reason" }, h("div", { class: "reason-title" }, sim.reward >= 0.999 ? "Evaluation" : "Golden failure reason"), ...rows);
   }
 
   function tracePanel(sim) {
@@ -219,7 +316,7 @@ export function TracesPage() {
     clear(main);
     main.appendChild(controls());
     if (!state.sel.length) {
-      main.appendChild(h("div", { class: "empty" }, "Add a trace with + (or load a flaky pass↔fail pair) on the left."));
+      main.appendChild(h("div", { class: "empty" }, "Add a trace with + from a cluster or task on the left. Use the Tasks tab to compare trials of the same task."));
       return;
     }
     const body = h("div", { class: "trace-body" }, spinner("Loading trace…"));
@@ -228,8 +325,7 @@ export function TracesPage() {
       const sims = await Promise.all(state.sel.map((sid) => getSim(store.run, sid)));
       clear(body);
       if (sims.length === 2 && state.diff) {
-        if (state.showReason)
-          body.appendChild(h("div", { class: "cols" }, reasonBlock(sims[0]), reasonBlock(sims[1])));
+        if (state.showReason) body.appendChild(h("div", { class: "cols" }, reasonBlock(sims[0]), reasonBlock(sims[1])));
         body.appendChild(h("div", { class: "diffscroll" }, DiffView(sims[0], sims[1], state.hideEqual, () => { state.hideEqual = false; renderMain(); })));
       } else if (sims.length === 2) {
         body.appendChild(h("div", { class: "cols" }, tracePanel(sims[0]), tracePanel(sims[1])));
@@ -242,8 +338,10 @@ export function TracesPage() {
     }
   }
 
-  // seed open cluster for any deep-linked selection
+  // seed: open the cluster/task of any deep-linked selection
   state.sel.forEach((sid) => {
+    const m = s.sims[sid];
+    if (m) openTasks.add(m.task_id);
     const c = s.clusters.find((x) => x.sims.includes(sid));
     if (c) openClusters.add(c.id);
   });

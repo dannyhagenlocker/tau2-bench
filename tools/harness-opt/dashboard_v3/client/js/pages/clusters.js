@@ -1,7 +1,7 @@
 import { h, clear } from "../dom.js";
 import { store } from "../store.js";
 import { navigate, parseHash } from "../router.js";
-import { ftype, badge } from "../components/widgets.js";
+import { ftype, ftypeColor, badge } from "../components/widgets.js";
 
 export function ClustersPage() {
   const s = store.summary;
@@ -25,7 +25,8 @@ export function ClustersPage() {
         ftype(c.failure_type),
       ),
     );
-    detail.appendChild(h("div", { class: "sig mono" }, c.signature || c.name));
+    if (c.gloss) detail.appendChild(h("div", { class: "gloss" }, c.gloss));
+    detail.appendChild(h("div", { class: "sig mono tiny" }, c.signature || c.name));
     if (c.blame && c.blame.length)
       detail.appendChild(h("div", { class: "badges" }, ...c.blame.map((b) => badge(b))));
 
@@ -114,11 +115,12 @@ export function ClustersPage() {
             class: "clu-bar",
             style: {
               width: (c.count / maxCount) * 100 + "%",
-              background: c.failure_type === "mixed" ? "#dc2626" : "#7c3aed",
+              background: ftypeColor(c.failure_type),
             },
           }),
         ),
-        h("div", { class: "cl-sig mono tiny" }, c.signature || c.name),
+        c.gloss ? h("div", { class: "cl-gloss" }, c.gloss) : null,
+        h("div", { class: "cl-sig mono tiny", title: c.signature || c.name }, c.signature || c.name),
       ),
     );
   });
