@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-opt/clusters.schema.json",
+  "title": "Clusters",
+  "type": "object",
+  "required": ["contract_version", "run_name", "layer", "clusters"],
+  "properties": {
+    "contract_version": { "type": "string", "const": "1.0" },
+    "run_name": { "type": "string" },
+    "layer": {
+      "type": "string",
+      "enum": ["l0", "l1", "l2", "final"],
+      "description": "l0=deterministic, final=merged output for downstream"
+    },
+    "clusters": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Cluster" }
+    }
+  },
+  "$defs": {
+    "Cluster": {
+      "type": "object",
+      "required": ["id", "name", "failure_type", "simulation_ids", "task_ids", "failure_rate", "count"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "failure_type": { "type": "string" },
+        "parent_l0_id": { "type": ["string", "null"] },
+        "simulation_ids": { "type": "array", "items": { "type": "string" } },
+        "task_ids": { "type": "array", "items": { "type": "string" } },
+        "failure_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "count": { "type": "integer", "minimum": 0 },
+        "signature": { "type": ["string", "null"] },
+        "tool_sequence_fingerprint": { "type": ["string", "null"] },
+        "policy_flag_summary": { "type": ["object", "null"] }
+      }
+    }
+  },
+  "additionalProperties": false
+}

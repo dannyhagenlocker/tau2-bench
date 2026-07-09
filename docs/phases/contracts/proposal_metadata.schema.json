@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-opt/proposal_metadata.schema.json",
+  "title": "ProposalMetadata",
+  "type": "object",
+  "required": [
+    "contract_version",
+    "proposal_id",
+    "cluster_id",
+    "run_name",
+    "branch_name",
+    "example_task_ids",
+    "status"
+  ],
+  "properties": {
+    "contract_version": { "type": "string", "const": "1.0" },
+    "proposal_id": { "type": "string" },
+    "cluster_id": { "type": "string" },
+    "run_name": { "type": "string" },
+    "branch_name": { "type": "string" },
+    "example_task_ids": { "type": "array", "items": { "type": "string" } },
+    "failure_mode_summary": { "type": ["string", "null"] },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "evaluated", "accepted", "rejected"]
+    },
+    "lineage_id": { "type": ["string", "null"] },
+    "coder_backend": { "type": ["string", "null"] },
+    "parent_commit": { "type": ["string", "null"] },
+    "resulting_commit": { "type": ["string", "null"] },
+    "generation": { "type": ["integer", "null"] },
+    "diff_stat": { "type": ["string", "null"] },
+    "eval_verdict": {
+      "type": ["string", "null"],
+      "enum": ["pass", "fail", "review", null]
+    },
+    "candidate_run": { "type": ["string", "null"] },
+    "created_at": { "type": "string", "format": "date-time" },
+    "evaluated_at": { "type": ["string", "null"], "format": "date-time" }
+  },
+  "additionalProperties": false
+}

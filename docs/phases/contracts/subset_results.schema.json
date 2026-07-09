@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-opt/subset_results.schema.json",
+  "title": "SubsetResults",
+  "type": "object",
+  "required": [
+    "contract_version",
+    "proposal_id",
+    "baseline_run",
+    "candidate_run",
+    "tasks",
+    "verdict",
+    "recommendation"
+  ],
+  "properties": {
+    "contract_version": { "type": "string", "const": "1.0" },
+    "proposal_id": { "type": "string" },
+    "baseline_run": { "type": "string" },
+    "candidate_run": { "type": "string" },
+    "subset_spec_path": { "type": ["string", "null"] },
+    "tasks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/TaskComparison" }
+    },
+    "improvements": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "task_ids that flipped fail→pass"
+    },
+    "regressions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "task_ids that flipped pass→fail"
+    },
+    "target_improvements": { "type": "integer", "minimum": 0 },
+    "control_regressions": { "type": "integer", "minimum": 0 },
+    "verdict": {
+      "type": "string",
+      "enum": ["pass", "fail", "review"]
+    },
+    "recommendation": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "TaskComparison": {
+      "type": "object",
+      "required": ["task_id", "baseline_reward", "candidate_reward", "role"],
+      "properties": {
+        "task_id": { "type": "string" },
+        "role": {
+          "type": "string",
+          "enum": ["target", "control", "oracle_stable", "oracle_fail"]
+        },
+        "baseline_reward": { "type": "number" },
+        "candidate_reward": { "type": "number" },
+        "delta": { "type": "number" }
+      }
+    }
+  },
+  "additionalProperties": false
+}

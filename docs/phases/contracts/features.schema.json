@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-opt/features.schema.json",
+  "title": "Features",
+  "type": "object",
+  "required": ["contract_version", "run_name", "simulations"],
+  "properties": {
+    "contract_version": { "type": "string", "const": "1.0" },
+    "run_name": { "type": "string" },
+    "domain": { "type": "string", "default": "retail" },
+    "simulations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SimulationFeatures" }
+    }
+  },
+  "$defs": {
+    "ToolCallRecord": {
+      "type": "object",
+      "required": ["name", "turn", "error"],
+      "properties": {
+        "name": { "type": "string" },
+        "turn": { "type": "integer", "minimum": 0 },
+        "error": { "type": "boolean" }
+      }
+    },
+    "PolicyFlags": {
+      "type": "object",
+      "required": ["single_tool_per_turn", "num_env_errors"],
+      "properties": {
+        "auth_before_mutate": { "type": ["boolean", "null"] },
+        "confirm_before_write": { "type": ["boolean", "null"] },
+        "single_tool_per_turn": { "type": "boolean" },
+        "num_env_errors": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "SimulationFeatures": {
+      "type": "object",
+      "required": [
+        "simulation_id",
+        "task_id",
+        "trial",
+        "reward",
+        "failure_type",
+        "tool_sequence",
+        "policy_flags",
+        "num_steps",
+        "embedding_text"
+      ],
+      "properties": {
+        "simulation_id": { "type": "string" },
+        "task_id": { "type": "string" },
+        "trial": { "type": "integer", "minimum": 0 },
+        "reward": { "type": "number" },
+        "failure_type": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "db_only",
+            "nl_only",
+            "mixed",
+            "communicate_only",
+            "termination"
+          ]
+        },
+        "termination_reason": { "type": ["string", "null"] },
+        "db_reward": { "type": ["number", "null"] },
+        "nl_reward": { "type": ["number", "null"] },
+        "communicate_reward": { "type": ["number", "null"] },
+        "tool_sequence": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ToolCallRecord" }
+        },
+        "normalized_tool_chain": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "write_tool_sequence": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "db_diff_signature": { "type": ["string", "null"] },
+        "db_diff_kinds": {
+          "type": ["object", "null"],
+          "additionalProperties": { "type": "integer" }
+        },
+        "db_diff_entities": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "nl_failure_signature": { "type": ["string", "null"] },
+        "nl_failed_assertions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "policy_flags": { "$ref": "#/$defs/PolicyFlags" },
+        "num_steps": { "type": "integer", "minimum": 0 },
+        "agent_cost": { "type": ["number", "null"] },
+        "embedding_text": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": false
+}

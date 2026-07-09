@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-opt/manifest.schema.json",
+  "title": "Manifest",
+  "type": "object",
+  "required": [
+    "contract_version",
+    "run_name",
+    "simulation_path",
+    "created_at"
+  ],
+  "properties": {
+    "contract_version": { "type": "string", "const": "1.0" },
+    "run_name": { "type": "string" },
+    "simulation_path": { "type": "string", "description": "Path to data/simulations/<run>/results.json or dir" },
+    "baseline_run": { "type": ["string", "null"], "description": "Run name used for comparison" },
+    "git_sha": { "type": ["string", "null"] },
+    "domain": { "type": "string", "default": "retail" },
+    "num_simulations": { "type": "integer", "minimum": 0 },
+    "num_trials": { "type": ["integer", "null"] },
+    "agent_llm": { "type": ["string", "null"] },
+    "user_llm": { "type": ["string", "null"] },
+    "created_at": { "type": "string", "format": "date-time" },
+    "artifacts": {
+      "type": "object",
+      "description": "Relative paths to generated artifacts",
+      "additionalProperties": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}

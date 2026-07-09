@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-opt/lineages.schema.json",
+  "title": "Lineages",
+  "description": "State of improvement-loop rollouts. Each lineage is a durable lineage/<id> git branch rooted at a base commit, accumulating one squashed commit per accepted proposal.",
+  "type": "object",
+  "required": ["contract_version", "lineages"],
+  "properties": {
+    "contract_version": { "type": "string", "const": "1.0" },
+    "lineages": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Lineage" }
+    }
+  },
+  "$defs": {
+    "LineageProposalRef": {
+      "type": "object",
+      "required": ["proposal_id", "cluster_id"],
+      "properties": {
+        "proposal_id": { "type": "string" },
+        "cluster_id": { "type": "string" },
+        "commit": { "type": ["string", "null"] },
+        "summary": { "type": ["string", "null"] }
+      }
+    },
+    "Lineage": {
+      "type": "object",
+      "required": ["contract_version", "lineage_id", "branch", "base_commit", "tip_commit"],
+      "properties": {
+        "contract_version": { "type": "string", "const": "1.0" },
+        "lineage_id": { "type": "string" },
+        "branch": { "type": "string" },
+        "base_commit": { "type": "string" },
+        "tip_commit": { "type": "string" },
+        "generation": { "type": "integer", "minimum": 0 },
+        "accepted_proposals": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/LineageProposalRef" }
+        },
+        "created_at": { "type": "string" },
+        "updated_at": { "type": "string" }
+      }
+    }
+  }
+}
