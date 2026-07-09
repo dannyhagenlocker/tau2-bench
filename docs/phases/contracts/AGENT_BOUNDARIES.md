@@ -46,7 +46,7 @@ All ──► P0-Orchestrate (wire analyze)
 |----------|------|----------|
 | **P2-Propose** | `scripts/propose.py`, `proposals/<id>/*` | May edit `src/tau2/agent/**` on proposal branch only |
 | **P2-EvalHook** | calls `eval_subset.py` | writes `subset_results.json` only |
-| **P2-ReviewUI** | `dashboard/pages/proposals.py` | writes `proposal_status.json` |
+| **P2-ReviewUI** | `dashboard_v3/` Proposals page (`client/js/pages/proposals.js` + API) | read-only over feeds; actions shell CLI |
 | **P2-Git** | merge scripts | git only |
 
 ## Phase 3 ownership

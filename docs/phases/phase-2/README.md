@@ -1,7 +1,13 @@
 # Phase 2 — Proposal Pipeline
 
-**Status:** Implemented (CLI + artifacts). Dashboard ReviewUI deferred to `dashboard_v2`.  
-**Agents:** P2-Propose, P2-EvalHook, P2-ReviewUI (deferred), P2-Git
+**Status:** Implemented (CLI + artifacts + ReviewUI).  
+**Agents:** P2-Propose, P2-EvalHook, P2-ReviewUI, P2-Git
+
+> **ReviewUI is now implemented** as the **Proposals page in the v3 dashboard**
+> (`dashboard_v3/`, see [phase-1/dashboard.md](../phase-1/dashboard.md)). It reads
+> the machine-readable feeds below (`proposals/index.json`, `lineages/index.json`,
+> per-proposal artifacts) and drives `propose`/`accept`/`reject` via the API.
+> The note about "deferred to dashboard_v2" is obsolete.
 
 ## Goal
 
@@ -121,9 +127,15 @@ sequenceDiagram
 - Wraps `eval_subset.py` after proposal branch checkout
 - Compares candidate run vs baseline per subset_spec
 
-### P2-ReviewUI (deferred)
+### P2-ReviewUI (implemented in v3 dashboard)
 
-- Deferred to the `dashboard_v2` owners. Phase 2 emits the machine-readable feeds (`reports/<run>/proposals/index.json`, `reports/lineages/index.json`) and per-proposal `proposal_status.json` for a dashboard to render. No dashboard code is touched by Phase 2.
+- Implemented as the **Proposals page** in `dashboard_v3/` (see
+  [phase-1/dashboard.md](../phase-1/dashboard.md)). Phase 2 emits the
+  machine-readable feeds (`reports/<run>/proposals/index.json`,
+  `reports/lineages/index.json`, per-proposal artifacts); the dashboard renders
+  the lineage catalog, proposals table + detail (coder log / diff / subset eval),
+  a new-proposal form, and Accept/Reject — via `/api/.../proposals*` and the
+  `propose`/`accept`/`reject` POST actions.
 
 ### P2-Git
 
@@ -134,7 +146,7 @@ sequenceDiagram
 
 - Auto-revision loop until subset passes
 - Automated accept without human
-- Dashboard ReviewUI page (deferred to `dashboard_v2`)
+- ~~Dashboard ReviewUI page~~ — now implemented (v3 Proposals page)
 
 ## Acceptance criteria
 

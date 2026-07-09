@@ -1,169 +1,45 @@
-# Phase 1 — Dashboard MVP
+# Phase 1 — Dashboard
 
-**Status:** MVP implemented  
-**Agents:** P1-Shell, P1-VizCore, P1-Traces, P1-Actions
+**Status:** Implemented. The current UI is **v3** (FastAPI + no-build SPA).
+
+> **Current UI doc → [`dashboard.md`](dashboard.md).** That is the source of
+> truth for the frontend. Everything below the divider is **historical** (the
+> original Streamlit-oriented plan and the superseded v1/v2 implementations),
+> kept for context only.
 
 ## Goal
 
-Interactive Streamlit app for engineers to explore runs, clusters, and traces. **Read-only** consumer of Phase 0 artifacts; triggers CLI via subprocess.
+Interactive app for engineers to explore runs, clusters, traces, the embedding
+space, run comparisons, and (Phase 2) proposals. Read-mostly consumer of Phase 0
+artifacts; a few actions shell the CLI.
 
 ## Entry
 
 ```bash
-uv sync --extra harness-opt          # streamlit + plotly + scikit-learn
-uv run streamlit run tools/harness-opt/dashboard/app.py
+uv sync --extra harness-opt        # fastapi/uvicorn (already deps) + plotly/sklearn
+uv run python tools/harness-opt/cli.py dashboard   # → http://127.0.0.1:8770
 ```
 
-## Implemented layout
+---
 
-```
-tools/harness-opt/dashboard/
-├── app.py                     # P1-Shell: run selector + page nav (bootstraps sys.path)
-├── state.py                   # P1-Shell: mtime-keyed cached artifact loaders
-└── components/
-    ├── metrics.py             # P1-VizCore: Overview (L0 bars, task×trial heatmap) + Compare runs (delta)
-    ├── clusters.py            # P1-VizCore: treemap + cluster table + drill-down (member signals)
-    ├── traces.py              # P1-Traces: trace timeline, signal badges, cluster gallery, side-by-side diff
-    └── actions.py             # P1-Actions: "Run analyze" subprocess + cache clear
-```
+## History (superseded)
 
-Pages: **Overview**, **Clusters** (treemap → member table → representative gallery),
-**Trace explorer**, **Compare traces** (side-by-side), **Compare runs** (per-task delta,
-pass↔fail flips), **Proposals** (Phase 2 stub), **Actions** (re-analyze).
+### v3 — FastAPI + SPA (CURRENT)
+See [`dashboard.md`](dashboard.md). `tools/harness-opt/dashboard_v3/`.
 
-## v3 — full app (FastAPI + SPA) — current
+### v2 — static HTML trace viewer (SUPERSEDED by v3; generator still exists)
+`tools/harness-opt/dashboard_v2/generate.py` emits a self-contained
+`reports/<run>/trace_viewer.html` (SVG swimlane + LCS diff, data inlined). Still
+produced best-effort at the end of `analyze` and via `cli.py viewer`, but the v3
+Traces page is the maintained path.
 
-`dashboard_v3/` is the real multi-page app: a **FastAPI backend** serving a JSON
-API over the artifacts + a **vanilla ES-module SPA** (components, hash router,
-lazy-loaded traces). No build step and no third-party JS (a tiny `h()`
-hyperscript in `client/js/dom.js` keeps components clean); runs with zero install
-since FastAPI/uvicorn are already deps.
+### v1 — Streamlit (SUPERSEDED)
+`tools/harness-opt/dashboard/` (`streamlit run … dashboard/app.py`). Hit a soft
+ceiling on dense trace comparison; replaced by v3. Retained but not maintained.
 
-```bash
-uv run python tools/harness-opt/cli.py dashboard          # → http://127.0.0.1:8770
-# or: uv run python tools/harness-opt/dashboard_v3/server.py --port 8770
-```
-
-Layout:
-
-```
-dashboard_v3/
-├── data.py            # cached read layer over reports/ + traces (lazy per-sim)
-├── server.py          # FastAPI: /api/runs, /summary, /tasks, /sims/{id}; serves client/
-└── client/
-    ├── index.html · styles.css
-    └── js/
-        ├── dom.js router.js api.js store.js app.js
-        ├── components/  waterfall.js diff.js jsontree.js trace_util.js widgets.js
-        └── pages/       overview.js clusters.js traces.js compare.js
-```
-
-API (traces are **lazy-loaded** per sim, so no multi-MB payload):
-`GET /api/runs`, `/api/runs/{run}/summary`, `/tasks`, `/sims/{sim_id}`.
-
-Pages (real hash routing + left-nav):
-- **Overview** — metric cards, L0 taxonomy bars, top clusters.
-- **Clusters** — cluster list (sized bars) → drill-down member table → "open"/"diff first two" into Traces.
-- **Traces** — the workspace: left picker (⚡ flaky pass↔fail one-click, searchable cluster→member A/B), main = waterfall timing tree (subtree collapse, click-to-expand pretty JSON, per-turn cost), pin B for side-by-side, **Diff** toggle (semantic LCS alignment, synchronized rows, word-level highlight), **Hide equal**.
-- **Compare runs** — pick a baseline; per-task Δ bars + improved/regressed flips.
-
-Supersedes the v2 static viewer and the Streamlit v1 (both retained for now).
-
-## v2 — static HTML trace viewer
-
-The Streamlit app is good for run/cluster overview but has a soft ceiling on
-dense trace comparison. `dashboard_v2/` generates a **self-contained static HTML
-viewer** (no server, no network — data inlined) purpose-built for inspecting and
-diffing traces.
-
-```
-tools/harness-opt/dashboard_v2/
-├── generate.py       # reads Phase 0 artifacts + raw sims → reports/<run>/trace_viewer.html
-└── template.html     # vanilla-JS SPA (SVG swimlane, LCS aligner, sync diff)
-```
-
-Generate (also runs automatically at the end of `analyze`, best-effort):
-
-```bash
-uv run python tools/harness-opt/cli.py viewer --run <name> --overwrite
-open reports/<name>/trace_viewer.html
-```
-
-Features:
-
-- **Waterfall tree with timing** — each trace renders as an indented node tree
-  (turn → tool calls → results) with duration bars on a shared time axis (from
-  per-message `timestamp`), per-turn cost, and caret **collapse of subtrees**.
-  Bars are dominated by LLM turn latency; local-DB tools are ~instant (faithful
-  to the data — tau2 retail is a flat half-duplex conversation, not a deep
-  multi-agent call graph).
-- **Pretty JSON, collapsed by default** — tool-call args and tool results render
-  as a native `<details>` JSON tree (objects/arrays collapsed beyond depth 1);
-  click a node label to expand its detail.
-- **Flaky pass↔fail selector** — sidebar lists tasks with both a passing and a
-  failing trial; one click loads the pass into **A**, the fail into **B**, and
-  turns on diff. (Precomputed in `generate.py`; 18 pairs on the baseline.)
-- **Cluster browser** grouped by failure taxonomy; assign any member to **A**/**B**
-  (open-cluster state persists across selections).
-- **Unified explorer**: pin a second trace in-place — no separate page. Compare
-  mode shows two waterfalls side by side.
-- **Synchronized diff toggle**: semantic LCS alignment over step `key`s
-  (value-free tokens: `C:<tool>`, `R:<tool>[:e]`, `A:text`, `U:text`) — so it's
-  tool-aware, not raw-text. Rendered as a two-column table (locked scroll);
-  word-level inline highlighting on replaced text turns; JSON payloads shown as
-  pretty trees; "hide equal" collapses unchanged runs.
-
-Node payload (depth + timing + content) is built by `generate.py::_steps_for_sim`
-/ `_add_timing`; flaky pairs and per-sim `total_dur` are added in `build_payload`.
-
-## Pages
-
-| Page | Agent | Data sources | Priority |
-|------|-------|--------------|----------|
-| **RunOverview** | P1-Shell | `manifest.json`, `task_summary.csv` | P0 |
-| **RunComparison** | P1-VizCore | two runs' `task_summary.csv` | P0 — delta chart |
-| **Clusters** | P1-VizCore | `clusters.json`, `cluster_labels.json` | P0 — treemap |
-| **TraceExplorer** | P1-Traces | `features.json`, simulation paths | P1 — timeline |
-| **ClusterGallery** | P1-Traces | rep sim ids → load trajectories | P1 |
-| **Proposals** | P1-Actions | stub; wired in Phase 2 | P2 |
-
-## Viz build order
-
-1. Run comparison delta chart (pass/fail flips)
-2. Failure mode treemap
-3. Tool-call timeline swimlane
-4. Cluster gallery (3 reps per cluster)
-5. Task × trial heatmap
-6. Side-by-side trajectory diff
-7. Cost/steps scatter (stretch)
-
-## Agent briefs
-
-### P1-Shell
-
-- **Owns:** `dashboard/app.py`, `dashboard/state.py`, run selector
-- **Reads:** `reports/*/manifest.json`
-- **Must NOT:** duplicate analysis logic
-
-### P1-VizCore
-
-- **Owns:** `dashboard/components/metrics.py`, `dashboard/components/clusters.py`
-- **Reads:** `task_summary.csv`, `clusters.json`, `cluster_labels.json`
-- **Uses:** plotly
-
-### P1-Traces
-
-- **Owns:** `dashboard/components/traces.py`
-- **Reads:** `features.json`, paths from `manifest.simulation_path`
-
-### P1-Actions
-
-- **Owns:** `dashboard/components/actions.py`
-- **Calls:** `uv run python tools/harness-opt/cli.py analyze ...`
-
-## Acceptance criteria
-
-- Select any run with a `manifest.json` and view pass rate + cluster list
-- Compare baseline vs candidate with task-level flip highlighting
-- Click cluster → see gallery of representative traces
-- "Re-analyze" button runs `cli.py analyze` subprocess and refreshes
+### Original MVP plan (HISTORICAL — do not use as spec)
+The initial Phase 1 plan targeted a Streamlit MVP with pages RunOverview /
+RunComparison / Clusters / TraceExplorer / ClusterGallery / Proposals and agent
+briefs P1-Shell/VizCore/Traces/Actions. That plan is **obsolete** — the shipped
+v3 app reorganizes and extends it (Embedding page, mechanism taxonomy, proposal
+ReviewUI, etc.). Refer to [`dashboard.md`](dashboard.md) instead.
