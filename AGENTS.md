@@ -1,6 +1,7 @@
 # AGENTS.md
 
 > Instructions for AI coding agents working on the τ-bench codebase.
+> **Take-home northstar:** [`docs/grounded-intelligence-northstar.md`](docs/grounded-intelligence-northstar.md) — goals, constraints, and workflow for this project.
 
 ## Project Overview
 
