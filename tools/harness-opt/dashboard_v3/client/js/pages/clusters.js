@@ -5,7 +5,7 @@ import { ftype, ftypeColor, badge } from "../components/widgets.js";
 
 export function ClustersPage() {
   const s = store.summary;
-  const wrap = h("div", { class: "page" });
+  const wrap = h("div", { class: "page clusters" });
   const clusters = [...s.clusters].sort((a, b) => b.count - a.count);
 
   const detail = h("div", { class: "panel cluster-detail" });
@@ -17,7 +17,12 @@ export function ClustersPage() {
       detail.appendChild(h("div", { class: "muted" }, "Select a cluster."));
       return;
     }
-    detail.appendChild(
+    const head = h("div", { class: "cluster-detail-head" });
+    const bodyS = h("div", { class: "cluster-detail-body" });
+    detail.appendChild(head);
+    detail.appendChild(bodyS);
+
+    head.appendChild(
       h(
         "div",
         { class: "panel-head" },
@@ -25,14 +30,14 @@ export function ClustersPage() {
         ftype(c.failure_type),
       ),
     );
-    if (c.gloss) detail.appendChild(h("div", { class: "gloss" }, c.gloss));
-    detail.appendChild(h("div", { class: "sig mono tiny" }, c.signature || c.name));
+    if (c.gloss) head.appendChild(h("div", { class: "gloss" }, c.gloss));
+    head.appendChild(h("div", { class: "sig mono tiny" }, c.signature || c.name));
     if (c.blame && c.blame.length)
-      detail.appendChild(h("div", { class: "badges" }, ...c.blame.map((b) => badge(b))));
+      head.appendChild(h("div", { class: "badges" }, ...c.blame.map((b) => badge(b))));
 
     const members = c.sims.map((sid) => s.sims[sid]).filter(Boolean);
-    detail.appendChild(
-      h("div", { class: "muted small", style: { margin: "8px 0 4px" } }, `${members.length} members`),
+    head.appendChild(
+      h("div", { class: "muted small", style: { margin: "8px 0 0" } }, `${members.length} members`),
     );
     const table = h("table", { class: "tbl" });
     table.appendChild(
@@ -70,10 +75,10 @@ export function ClustersPage() {
         ),
       );
     });
-    detail.appendChild(table);
+    bodyS.appendChild(table);
 
     if (members.length >= 2) {
-      detail.appendChild(
+      bodyS.appendChild(
         h(
           "button",
           {

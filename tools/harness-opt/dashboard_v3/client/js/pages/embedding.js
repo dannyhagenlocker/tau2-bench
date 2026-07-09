@@ -124,26 +124,36 @@ function scatterPanel(e) {
 
 function heatPanel(e) {
   const n = e.labels.length;
-  const size = n > 40 ? 11 : n > 20 ? 16 : 24;
-  const grid = h("div", { class: "heat", style: { gridTemplateColumns: `64px repeat(${n}, ${size}px)` } });
-  for (let i = 0; i < n; i++) {
-    grid.appendChild(h("div", { class: "heatlbl mono" }, e.labels[i]));
-    for (let j = 0; j < n; j++) {
-      const v = e.similarity[i][j];
-      grid.appendChild(
-        h("div", {
-          class: "heatcell",
-          title: `${e.labels[i]} ↔ ${e.labels[j]} = ${v.toFixed(2)}`,
-          style: { width: size + "px", height: size + "px", background: `rgba(59,91,253,${v})` },
-        }),
-      );
-    }
-  }
+  const div = h("div", { class: "plot heat-plot" });
+  const trace = {
+    type: "heatmap",
+    z: e.similarity,
+    x: e.labels,
+    y: e.labels,
+    zmin: 0,
+    zmax: 1,
+    xgap: 1,
+    ygap: 1,
+    colorscale: [[0, "#f3f6ff"], [0.5, "#9db2fb"], [1, "#3b5bfd"]],
+    colorbar: { thickness: 10, len: 0.85, outlinewidth: 0, tickfont: { size: 10 }, title: { text: "cos", side: "right", font: { size: 10 } } },
+    hovertemplate: "%{y} ↔ %{x}<br>cosine %{z:.2f}<extra></extra>",
+  };
+  // show every tick only when there's room; otherwise let Plotly thin them
+  const tick = { tickfont: { size: 9 }, automargin: true, showgrid: false, ...(n <= 30 ? { dtick: 1 } : {}) };
+  const layout = {
+    margin: { l: 58, r: 10, t: 8, b: 58 },
+    font: FONT,
+    paper_bgcolor: "#fff",
+    plot_bgcolor: "#fff",
+    xaxis: { ...tick, side: "bottom", constrain: "domain" },
+    yaxis: { ...tick, autorange: "reversed", scaleanchor: "x", scaleratio: 1, constrain: "domain" },
+  };
+  renderPlot(div, [trace], layout, null);
   return h(
     "div",
     { class: "panel" },
     h("h3", {}, "Cluster similarity (centroid cosine)"),
-    h("div", { class: "muted tiny plot-cap" }, "brighter off-diagonal cells = near-duplicate clusters (merge candidates). Hover a cell for the pair."),
-    h("div", { class: "heatwrap" }, grid),
+    h("div", { class: "muted tiny plot-cap" }, "brighter cells = more similar centroids; bright off-diagonal pairs are near-duplicate clusters (merge candidates)."),
+    div,
   );
 }
