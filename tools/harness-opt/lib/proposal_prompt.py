@@ -65,12 +65,26 @@ def build_coder_prompt(
     label: Optional[ClusterLabel],
     reps: list[SimulationFeatures],
     *,
+    rep_traces: Optional[list[str]] = None,
     domain: str = "retail",
 ) -> str:
-    """Construct the headless coding-agent prompt for one failure cluster."""
+    """Construct the headless coding-agent prompt for one failure cluster.
+
+    ``rep_traces`` are pre-rendered, cost-bounded transcripts sampled from the
+    cluster (see ``lib/trace_render.py``); when provided they give the coder the
+    actual agent behaviour, not just per-sim metadata.
+    """
     summary = build_failure_summary(cluster, label, reps)
     rep_lines = "\n".join(f"  - {_rep_snippet(f)}" for f in reps) or "  (none)"
     task_ids = ", ".join(cluster.task_ids[:12]) or "(unknown)"
+
+    traces_block = ""
+    if rep_traces:
+        traces_block = (
+            "\n## Sampled traces from this cluster (truncated)\n"
+            + "\n\n".join(rep_traces)
+            + "\n"
+        )
 
     return f"""\
 You are improving the τ2-bench {domain} customer-service agent harness. You are
@@ -80,16 +94,18 @@ addresses ONE observed failure mode, then stop.
 ## Failure mode (from offline trace clustering)
 {summary}
 
-## Representative failing traces
+## Representative failing sims (index)
 {rep_lines}
 
 ## Affected tasks (subset that gates this change)
 {task_ids}
-
+{traces_block}
 ## What to do
 1. Read the relevant harness code (start with src/tau2/agent/llm_agent.py:
    AGENT_INSTRUCTION / SYSTEM_PROMPT).
-2. Diagnose how this failure mode arises from the agent's behavior.
+2. Using the sampled traces above, diagnose how this failure mode arises from
+   the agent's behavior (wrong tool args, skipped confirmation/auth, missing
+   statement to the user, etc.).
 3. Make the smallest agent-side change that plausibly fixes it and generalizes.
 4. End with a short summary: the hypothesis, the exact change, and the risk.
 

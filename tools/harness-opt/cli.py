@@ -153,7 +153,9 @@ def cluster_compare(
 def label(
     run: str = typer.Option(..., "--run"),
     mock: bool = typer.Option(False, "--mock", help="Skip LLM API calls"),
-    model: str = typer.Option("gpt-4.1-mini", "--model"),
+    model: str = typer.Option(
+        "gpt-4.1-mini", "--model", help="cheap model for cluster summaries"
+    ),
     overwrite: bool = typer.Option(False, "--overwrite"),
 ) -> None:
     """Label clusters (LLM on representatives, or --mock)."""
@@ -265,6 +267,12 @@ def propose(
     coder_model: str | None = typer.Option(
         None, "--coder-model", help="Proposer model (default gpt-4.1)"
     ),
+    num_traces: int = typer.Option(
+        12, "--num-traces", help="Max diverse traces sampled"
+    ),
+    trace_char_budget: int = typer.Option(
+        80000, "--trace-char-budget", help="Total trace char budget (cost control)"
+    ),
     eval: bool = typer.Option(
         False, "--eval", help="Run subset eval (spends OpenAI budget)"
     ),
@@ -274,6 +282,14 @@ def propose(
     args = ["--run", run, "--cluster", cluster, "--coder", coder]
     if coder_model:
         args.extend(["--coder-model", coder_model])
+    args.extend(
+        [
+            "--num-traces",
+            str(num_traces),
+            "--trace-char-budget",
+            str(trace_char_budget),
+        ]
+    )
     if lineage:
         args.extend(["--lineage", lineage])
     if baseline:

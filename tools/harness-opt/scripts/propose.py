@@ -33,7 +33,7 @@ from contracts.models import (  # noqa: E402
 )
 from lib import lineage as lin  # noqa: E402
 from lib.coder import get_coder  # noqa: E402
-from lib.io import read_json_artifact  # noqa: E402
+from lib.io import load_simulation_path, read_json_artifact  # noqa: E402
 from lib.paths import (  # noqa: E402
     REPO_ROOT,
     artifact_path,
@@ -42,7 +42,11 @@ from lib.paths import (  # noqa: E402
 )
 from lib.proposal_prompt import build_coder_prompt, build_failure_summary  # noqa: E402
 from lib.proposals_index import rewrite_all  # noqa: E402
+from lib.sampling import select_diverse  # noqa: E402
+from lib.trace_render import render_traces  # noqa: E402
 from scripts.build_subset import run_build_cluster_subset  # noqa: E402
+
+from tau2.data_model.simulation import Results  # noqa: E402
 
 
 def _now() -> str:
@@ -68,10 +72,39 @@ def _lineage_lock(lineage_id: str):
         lock.unlink(missing_ok=True)
 
 
-def _pick_reps(cluster, features_by_id, n: int = 3):
-    return [
-        features_by_id[s] for s in cluster.simulation_ids[:n] if s in features_by_id
-    ]
+MIN_PER_TRACE_CHARS = 3000
+MAX_PER_TRACE_CHARS = 12000
+
+
+def _pick_reps(cluster, features_by_id, n: int):
+    """Diversity-ordered representatives across the whole cluster (not first N)."""
+    feats = [features_by_id[s] for s in cluster.simulation_ids if s in features_by_id]
+    return select_diverse(feats, n)
+
+
+def _render_rep_traces(
+    run_name: str, sim_ids: list[str], trace_char_budget: int
+) -> list[str]:
+    """Render transcripts for the reps, splitting a total char budget across them.
+
+    Adaptive per-trace cap: small clusters get rich full traces; large clusters
+    get more traces each slightly trimmed. Total stays bounded (cost control).
+    """
+    if not sim_ids:
+        return []
+    try:
+        results = Results.load(load_simulation_path(run_name))
+    except Exception:
+        return []
+    by_id = {s.id: s for s in results.simulations}
+    sims = [by_id[sid] for sid in sim_ids if sid in by_id]
+    if not sims:
+        return []
+    per_trace = max(
+        MIN_PER_TRACE_CHARS,
+        min(MAX_PER_TRACE_CHARS, trace_char_budget // len(sims)),
+    )
+    return render_traces(sims, max_chars=per_trace, max_tool_result_chars=500)
 
 
 def _run_candidate_subset(
@@ -168,6 +201,8 @@ def run_propose(
     baseline_run: Optional[str] = None,
     coder: str = "auto",
     coder_model: Optional[str] = None,
+    num_traces: int = 12,
+    trace_char_budget: int = 80000,
     do_eval: bool = False,
     num_trials: int = 1,
     max_concurrency: int = 10,
@@ -207,9 +242,12 @@ def run_propose(
         parent_commit = lin.start_proposal(worktree, proposal_id)
 
         # 3. Coder edits the harness inside the worktree.
-        reps = _pick_reps(cluster, features_by_id)
+        reps = _pick_reps(cluster, features_by_id, num_traces)
         summary = build_failure_summary(cluster, label, reps)
-        prompt = build_coder_prompt(cluster, label, reps)
+        rep_traces = _render_rep_traces(
+            run_name, [r.simulation_id for r in reps], trace_char_budget
+        )
+        prompt = build_coder_prompt(cluster, label, reps, rep_traces=rep_traces)
         backend = get_coder(coder, model=coder_model)
         coder_result = backend.run(prompt, worktree)
         (pdir / "coder_log.json").write_text(
@@ -291,6 +329,15 @@ def main() -> None:
     )
     parser.add_argument("--coder-model", help="Proposer model (default: gpt-4.1)")
     parser.add_argument(
+        "--num-traces", type=int, default=12, help="Max diverse traces sampled"
+    )
+    parser.add_argument(
+        "--trace-char-budget",
+        type=int,
+        default=80000,
+        help="Total char budget across sampled traces (cost control)",
+    )
+    parser.add_argument(
         "--eval", action="store_true", help="Run subset eval (spends OpenAI budget)"
     )
     parser.add_argument("--num-trials", type=int, default=1)
@@ -305,6 +352,8 @@ def main() -> None:
         baseline_run=args.baseline,
         coder=args.coder,
         coder_model=args.coder_model,
+        num_traces=args.num_traces,
+        trace_char_budget=args.trace_char_budget,
         do_eval=args.eval,
         num_trials=args.num_trials,
         max_concurrency=args.max_concurrency,
