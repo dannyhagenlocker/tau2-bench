@@ -79,6 +79,13 @@ harness-opt = [
     "streamlit>=1.40.0",
     "plotly>=6.0.0",
 ]
+# Optional neural embeddings for the embedding clustering engine
+# (lib/embedding_cluster.py --embedder st). Heavy (pulls torch); install only
+# when you want sentence-transformer embeddings instead of the offline
+# tfidf/char/lsa embedders.
+harness-opt-embeddings = [
+    "sentence-transformers>=3.0",
+]
 all = [
     "tau2[voice,knowledge,gym,dev,experiments,harness-opt]",
 ]

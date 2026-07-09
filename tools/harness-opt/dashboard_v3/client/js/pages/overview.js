@@ -1,7 +1,7 @@
 import { h } from "../dom.js";
 import { store } from "../store.js";
 import { navigate } from "../router.js";
-import { card, ftype, ftypeColor, bar } from "../components/widgets.js";
+import { card, mechanism, mechanismColor, bar } from "../components/widgets.js";
 
 export function OverviewPage() {
   const s = store.summary;
@@ -21,18 +21,18 @@ export function OverviewPage() {
     ),
   );
 
-  // L0 taxonomy bars
+  // L0 = root-cause mechanism breakdown (biggest insight)
   const maxL0 = Math.max(1, ...s.l0.map((c) => c.count));
   const l0 = h(
     "div",
     { class: "panel" },
-    h("h3", {}, "Failure taxonomy (L0)"),
+    h("h3", {}, "Root cause (mechanism)"),
     ...s.l0.map((c) =>
       h(
         "div",
         { class: "l0line" },
-        h("span", { class: "l0name" }, c.name),
-        h("span", { class: "l0bar" }, bar(c.count / maxL0, ftypeColor(c.name.split(":")[0]))),
+        h("span", { class: "l0name" }, mechanism(c.name.split(":")[0])),
+        h("span", { class: "l0bar" }, bar(c.count / maxL0, mechanismColor(c.name.split(":")[0]))),
         h("span", { class: "l0cnt" }, c.count),
       ),
     ),
@@ -56,7 +56,7 @@ export function OverviewPage() {
           class: "clusterline",
           onClick: () => navigate("/clusters", { c: c.id }),
         },
-        ftype(c.failure_type),
+        mechanism(c.mechanism),
         h("span", { class: "cl-id" }, c.id),
         h("span", { class: "cl-count" }, "n=" + c.count),
         h("span", { class: "cl-sig", title: c.signature || c.name }, c.gloss || c.signature || c.name),

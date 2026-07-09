@@ -2,7 +2,7 @@ import { clear, h } from "../dom.js";
 import { getSim } from "../api.js";
 import { store } from "../store.js";
 import { parseHash } from "../router.js";
-import { ftype, spinner } from "../components/widgets.js";
+import { ftype, mechanism, spinner } from "../components/widgets.js";
 import { Waterfall } from "../components/waterfall.js";
 import { DiffView } from "../components/diff.js";
 
@@ -79,7 +79,7 @@ export function TracesPage() {
     return h(
       "div",
       { class: "member" + (inSel ? " sel" : "") },
-      ftype(m.failure_type),
+      mechanism(m.mechanism),
       h("span", { class: "lbl" }, primaryText),
       h(
         "span",
@@ -152,7 +152,7 @@ export function TracesPage() {
           onClick: () => { isOpen ? openClusters.delete(c.id) : openClusters.add(c.id); buildLeft(); },
         },
         h("span", { class: "caret" }, isOpen ? "▾" : "▸"),
-        ftype(c.failure_type),
+        mechanism(c.mechanism),
         h("span", { class: "cl-id" }, c.id),
         h("span", { class: "cl-count" }, c.count),
       );
@@ -255,6 +255,8 @@ export function TracesPage() {
       { class: "chip" },
       h("span", { class: "mono" }, (sid || "").slice(0, 8)),
       ` · task ${m.task_id} t${m.trial} `,
+      mechanism(m.mechanism),
+      " ",
       ftype(m.failure_type),
       ` r=${(m.reward ?? 0).toFixed(2)}`,
       h("span", { class: "chip-x", title: "remove from view", onClick: () => remove(sid) }, "✕"),
@@ -282,6 +284,7 @@ export function TracesPage() {
     const fr = sim.failure_reason;
     if (!fr) return null;
     const rows = [
+      h("div", { class: "rr-line" }, h("b", {}, "mechanism "), mechanism(sim.mechanism)),
       h("div", { class: "rr-line" }, h("b", {}, "reward "), fr.reward.toFixed(2), " · basis ", (fr.reward_basis || []).join(" + ")),
     ];
     const bd = Object.entries(fr.reward_breakdown || {}).map(([k, v]) => `${k}=${v}`).join("   ");
@@ -310,6 +313,8 @@ export function TracesPage() {
       h("span", {}, [
         h("span", { class: "mono" }, sim.simulation_id.slice(0, 8)),
         ` · task ${sim.task_id} · t${sim.trial} · `,
+        mechanism(sim.mechanism),
+        " ",
         ftype(sim.failure_type),
         ` · r=${sim.reward.toFixed(2)}`,
       ]),
