@@ -27,12 +27,23 @@ export function ProposalsPage() {
 
   // ---- create ----
   function newProposalPanel() {
-    const clusters = (store.summary && store.summary.clusters) || [];
+    const clusters = [...((store.summary && store.summary.clusters) || [])].sort((a, b) => b.count - a.count);
+    const optText = (c) => {
+      const sum = (c.summary || c.gloss || c.mechanism || "").replace(/\s+/g, " ").trim();
+      const short = sum.length > 60 ? sum.slice(0, 60) + "…" : sum;
+      return `${c.id} · ${c.count} sims${short ? " — " + short : ""}`;
+    };
     const clusterSel = h(
       "select",
-      { class: "select", style: { maxWidth: "380px" } },
-      ...clusters.map((c) => h("option", { value: c.id }, `${c.id} · ${c.gloss || c.failure_type} (n=${c.count})`)),
+      { class: "select", style: { maxWidth: "480px" } },
+      ...clusters.map((c) => h("option", { value: c.id, title: c.summary || "" }, optText(c))),
     );
+    const clusterSummary = h("div", { class: "cl-summary prop-cluster-summary" });
+    const updateSummary = () => {
+      const c = clusters.find((x) => x.id === clusterSel.value);
+      clusterSummary.textContent = c ? c.summary || c.gloss || "" : "";
+    };
+    clusterSel.addEventListener("change", updateSummary);
     const coderSel = h(
       "select",
       { class: "select" },
@@ -71,18 +82,21 @@ export function ProposalsPage() {
       }
     });
 
-    return h(
+    const panel = h(
       "div",
       { class: "panel" },
       h("h3", {}, "New proposal"),
       h("div", { class: "muted tiny", style: { marginBottom: "8px" } }, "One failure cluster → one auto-coded, allowlisted harness edit on an isolated lineage worktree."),
       h("div", { class: "form-row" }, h("label", {}, "cluster"), clusterSel),
+      clusterSummary,
       h("div", { class: "form-row" }, h("label", {}, "coder"), coderSel, h("label", {}, "proposer model"), modelIn, h("label", {}, "lineage"), lineageIn),
       h("div", { class: "form-row" }, h("label", { style: { minWidth: "auto" } }, evalChk, " run subset eval")),
       evalChk && h("div", { class: "warn-box" }, "Eval spends OpenAI budget (~$1–3) and runs tau2 for minutes. Leave off for a free draft (branch + diff + coder log)."),
       h("div", { class: "form-row" }, btn),
       out,
     );
+    updateSummary();
+    return panel;
   }
 
   // ---- lineages ----
@@ -120,18 +134,26 @@ export function ProposalsPage() {
       return panel;
     }
     const tbl = h("table", { class: "tbl" }, h("tr", {}, h("th", {}, "proposal"), h("th", {}, "cluster"), h("th", {}, "status"), h("th", {}, "verdict"), h("th", {}, "coder"), h("th", {}, "diff"), h("th", {}, "summary")));
+    const rows = [];
     props.forEach((p) => {
-      tbl.appendChild(
-        h("tr", { class: "prop-row", onClick: () => openDetail(p.proposal_id, detail) },
-          h("td", { class: "mono tiny" }, p.proposal_id),
-          h("td", {}, p.cluster_id),
-          h("td", {}, statusPill(p.status)),
-          h("td", {}, p.eval_verdict ? verdictPill(p.eval_verdict) : "—"),
-          h("td", { class: "tiny" }, p.coder_backend || "—"),
-          h("td", { class: "tiny" }, p.diff_stat || "—"),
-          h("td", { class: "tiny muted" }, p.one_line_summary || ""),
-        ),
+      const tr = h("tr", {
+        class: "prop-row",
+        onClick: () => {
+          rows.forEach((r) => r.classList.remove("sel"));
+          tr.classList.add("sel");
+          openDetail(p.proposal_id, detail);
+        },
+      },
+        h("td", { class: "mono tiny" }, p.proposal_id),
+        h("td", {}, p.cluster_id),
+        h("td", {}, statusPill(p.status)),
+        h("td", {}, p.eval_verdict ? verdictPill(p.eval_verdict) : "—"),
+        h("td", { class: "tiny" }, p.coder_backend || "—"),
+        h("td", { class: "tiny" }, p.diff_stat || "—"),
+        h("td", { class: "tiny muted" }, p.one_line_summary || ""),
       );
+      rows.push(tr);
+      tbl.appendChild(tr);
     });
     panel.appendChild(tbl);
     panel.appendChild(detail);
@@ -145,6 +167,7 @@ export function ProposalsPage() {
       const d = await api.proposal(store.run, pid);
       clear(container);
       container.appendChild(renderDetail(d));
+      container.scrollIntoView({ behavior: "smooth", block: "nearest" });
     } catch (e) {
       clear(container);
       container.appendChild(h("div", { class: "error" }, "Failed: " + e.message));

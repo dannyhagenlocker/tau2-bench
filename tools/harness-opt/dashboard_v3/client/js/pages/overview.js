@@ -21,21 +21,24 @@ export function OverviewPage() {
     ),
   );
 
-  // L0 = root-cause mechanism breakdown (biggest insight)
-  const maxL0 = Math.max(1, ...s.l0.map((c) => c.count));
+  // L0 = root-cause mechanism breakdown (biggest insight), normalized by
+  // total traces so each bar reads as a share of all sims.
+  const totalSims = Math.max(1, s.l0.reduce((a, c) => a + c.count, 0));
   const l0 = h(
     "div",
     { class: "panel" },
     h("h3", {}, "Root cause (mechanism)"),
-    ...s.l0.map((c) =>
-      h(
+    ...s.l0.map((c) => {
+      const code = c.name.split(":")[0];
+      const pct = (c.count / totalSims) * 100;
+      return h(
         "div",
         { class: "l0line" },
-        h("span", { class: "l0name" }, mechanism(c.name.split(":")[0])),
-        h("span", { class: "l0bar" }, bar(c.count / maxL0, mechanismColor(c.name.split(":")[0]))),
-        h("span", { class: "l0cnt" }, c.count),
-      ),
-    ),
+        h("span", { class: "l0name" }, mechanism(code)),
+        h("span", { class: "l0bar" }, bar(c.count / totalSims, mechanismColor(code), mechanismColor(code) + "22")),
+        h("span", { class: "l0cnt" }, `${c.count} · ${pct.toFixed(0)}%`),
+      );
+    }),
   );
 
   // Top clusters preview

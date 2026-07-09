@@ -84,11 +84,11 @@ export function spinner(text) {
   return h("div", { class: "spinner" }, text || "Loading…");
 }
 
-export function bar(fraction, color) {
+export function bar(fraction, color, trackColor) {
   const pct = Math.max(0, Math.min(1, fraction)) * 100;
   return h(
     "div",
-    { class: "hbar" },
+    { class: "hbar", style: trackColor ? { background: trackColor } : {} },
     h("div", { class: "hbar-fill", style: { width: pct + "%", background: color || "#2563eb" } }),
   );
 }
@@ -96,4 +96,25 @@ export function bar(fraction, color) {
 export function fmtDur(s) {
   if (s == null) return "";
   return s >= 0.01 ? s.toFixed(2) + "s" : "";
+}
+
+// Cluster importance bar: total width = cluster's share of ALL traces, split
+// into mechanism-colored segments proportional to member counts per mechanism.
+export function importanceBar(memberMechs, total, count) {
+  const counts = {};
+  (memberMechs || []).forEach((m) => { counts[m] = (counts[m] || 0) + 1; });
+  const order = MECH_ORDER.filter((m) => counts[m]);
+  const segs = order.map((m) =>
+    h("span", {
+      class: "barseg",
+      title: `${m}: ${counts[m]}`,
+      style: { width: (counts[m] / total) * 100 + "%", background: mechanismColor(m) },
+    }),
+  );
+  const pct = (count / total) * 100;
+  return h(
+    "div",
+    { class: "clu-barwrap tr-barwrap", title: `${count} of ${total} failures (${pct.toFixed(1)}%)` },
+    ...segs,
+  );
 }

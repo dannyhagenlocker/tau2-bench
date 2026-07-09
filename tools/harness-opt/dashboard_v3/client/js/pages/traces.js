@@ -2,7 +2,7 @@ import { clear, h } from "../dom.js";
 import { getSim } from "../api.js";
 import { store } from "../store.js";
 import { parseHash } from "../router.js";
-import { ftype, mechanism, spinner } from "../components/widgets.js";
+import { importanceBar, mechanism, spinner } from "../components/widgets.js";
 import { Waterfall } from "../components/waterfall.js";
 import { DiffView } from "../components/diff.js";
 
@@ -71,7 +71,7 @@ export function TracesPage() {
   }
 
   // ---------- shared member row ----------
-  function memberRow(sid, primaryText) {
+  function memberRow(sid, primaryText, showMech = true) {
     const m = s.sims[sid];
     if (!m) return null;
     const inSel = state.sel.includes(sid);
@@ -79,7 +79,7 @@ export function TracesPage() {
     return h(
       "div",
       { class: "member" + (inSel ? " sel" : "") },
-      mechanism(m.mechanism),
+      showMech ? mechanism(m.mechanism) : null,
       h("span", { class: "lbl" }, primaryText),
       h(
         "span",
@@ -140,10 +140,12 @@ export function TracesPage() {
 
   function buildClusters(container, f) {
     container.appendChild(h("div", { class: "sec-title" }, `Failure clusters (${s.clusters.length})`));
+    const totalFailures = Math.max(1, s.clusters.reduce((a, c) => a + c.count, 0));
     s.clusters.forEach((c) => {
       const hay = (c.id + " " + c.failure_type + " " + c.gloss + " " + c.signature + " " +
-        c.sims.map((x) =>           s.sims[x] && s.sims[x].task_id).join(" ")).toLowerCase();
+        c.sims.map((x) => s.sims[x] && s.sims[x].task_id).join(" ")).toLowerCase();
       if (f && !hay.includes(f)) return;
+      const share = (c.count / totalFailures) * 100;
       const isOpen = openClusters.has(c.id);
       const head = h(
         "div",
@@ -152,16 +154,25 @@ export function TracesPage() {
           onClick: () => { isOpen ? openClusters.delete(c.id) : openClusters.add(c.id); buildLeft(); },
         },
         h("span", { class: "caret" }, isOpen ? "▾" : "▸"),
-        mechanism(c.mechanism),
         h("span", { class: "cl-id" }, c.id),
-        h("span", { class: "cl-count" }, c.count),
+        h("span", { class: "cl-count" }, `${c.count} · ${share.toFixed(0)}%`),
       );
       const box = h("div", { class: "clu-box" }, head);
+      box.appendChild(importanceBar(c.sims.map((sid) => (s.sims[sid] || {}).mechanism || "other"), totalFailures, c.count));
       if (isOpen) {
-        if (c.gloss) box.appendChild(h("div", { class: "cl-gloss" }, c.gloss));
-        c.sims.forEach((sid) => {
+        if (c.summary || c.gloss) box.appendChild(h("div", { class: "cl-summary-mini" }, c.summary || c.gloss));
+        const sortedSims = [...c.sims].sort((a, b) => {
+          const ma = s.sims[a] || {}, mb = s.sims[b] || {};
+          const ta = Number(ma.task_id), tb = Number(mb.task_id);
+          const byTaskId = Number.isNaN(ta) || Number.isNaN(tb)
+            ? String(ma.task_id).localeCompare(String(mb.task_id))
+            : ta - tb;
+          return byTaskId || (ma.trial ?? 0) - (mb.trial ?? 0);
+        });
+        sortedSims.forEach((sid) => {
           const m = s.sims[sid];
-          box.appendChild(memberRow(sid, `task ${m.task_id} · t${m.trial} · r=${m.reward.toFixed(1)}`));
+          // mechanism (failure taxonomy) belongs on each task, not the mixed cluster
+          box.appendChild(memberRow(sid, `task ${m.task_id} · t${m.trial} · r=${m.reward.toFixed(1)}`, true));
         });
       }
       container.appendChild(box);
@@ -256,8 +267,6 @@ export function TracesPage() {
       h("span", { class: "mono" }, (sid || "").slice(0, 8)),
       ` · task ${m.task_id} t${m.trial} `,
       mechanism(m.mechanism),
-      " ",
-      ftype(m.failure_type),
       ` r=${(m.reward ?? 0).toFixed(2)}`,
       h("span", { class: "chip-x", title: "remove from view", onClick: () => remove(sid) }, "✕"),
     );
@@ -314,8 +323,6 @@ export function TracesPage() {
         h("span", { class: "mono" }, sim.simulation_id.slice(0, 8)),
         ` · task ${sim.task_id} · t${sim.trial} · `,
         mechanism(sim.mechanism),
-        " ",
-        ftype(sim.failure_type),
         ` · r=${sim.reward.toFixed(2)}`,
       ]),
       h("span", {}, `${(sim.total_dur || 0).toFixed(2)}s · ${sim.steps.length} steps · $${(sim.agent_cost || 0).toFixed(4)}`),
