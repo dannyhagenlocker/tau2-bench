@@ -209,6 +209,42 @@ Format: **Date · Decision · Rationale · Alternatives considered**
 
 ---
 
+## 2026-07-09 — Phase 2 proposal pipeline: lineage-per-rollout git model
+
+**Decision:** Refined the earlier "per-proposal branch, independent" workflow into a **lineage-per-rollout** model. A pinned base commit roots durable `lineage/<id>` branches; each accepted proposal is **one squashed commit** on the lineage (cumulative — `proposal/<id>` eval branches fork from the current lineage tip, not a fixed base). One git worktree per lineage; per-lineage lockfile serializes `propose`.
+
+**Rationale:** User wants end viewers to browse different loop rollouts as branches, each showing the ordered commit history of accepted proposals that build on each other. Bounds disk (no per-proposal full checkouts) and keeps proposals git-discoverable.
+
+**Alternatives:** Per-proposal worktree (disk blowup, orphaned worktrees); fixed-base independent proposals (rejected — proposals must stack); real branches on the current checkout (rejected — active `dashboard_v2` work must stay untouched).
+
+**Outcome:** Implemented in `lib/lineage.py`, `scripts/propose.py`, `scripts/manage_proposal.py`. Accept advances the lineage by exactly one squashed commit; verified by `tests/test_proposals.py` and an end-to-end `--coder manual` smoke run.
+
+---
+
+## 2026-07-09 — Automated coder via local CLI + subset gating
+
+**Decision:** The harness edit is produced by a **local coding-agent CLI** run headless in the worktree (`lib/coder.py`): Claude Code (`claude -p`) as the primary/default backend, Cursor (`cursor-agent`/`cursor-sdk`) optional, `manual` fallback. Each proposal is gated by a **subset run** vs the generation baseline (no per-proposal full rerun); full re-baseline only at generation boundaries. `--eval` is opt-in to protect the $50 OpenAI budget.
+
+**Rationale:** User has a local coding subagent (Claude/Cursor) and wants option B (automated) plus artifacts recording what was proposed and what happened (`coder_log.json`, `diff.patch`, `proposal.md`). Coder cost is on the local subscription, separate from the benchmark budget.
+
+**Alternatives:** Scaffold-only (no auto-edit); deterministic recipe/template library; full baseline rerun per proposal (rejected — wastes budget).
+
+**Outcome:** Dashboard ReviewUI deferred to `dashboard_v2`; Phase 2 emits `reports/<run>/proposals/index.json` + `reports/lineages/index.json` for it to consume.
+
+---
+
+## 2026-07-09 — Proposal coder is self-contained on the OpenAI key (supersedes Claude-default)
+
+**Decision:** The default proposer backend is now **`openai`** (`OpenAICoder` in `lib/coder.py`): it uses the provided OpenAI key via `tau2.utils.llm_utils.generate` to emit structured `{path, old_string, new_string}` edits, which we validate + apply ourselves. This supersedes the earlier "Claude Code default." `claude`/`cursor` remain opt-in, off-ledger dev conveniences. Proposer defaults to a cheap model (`gpt-4.1`); the change is still evaluated under `gpt-5.5`.
+
+**Rationale:** The assignment scopes the $50 key to "all runs, experiments, and any LLM-powered tooling." Proposal generation is LLM-powered tooling, so it must be self-contained, reproducible from just the key, and counted in the single budget. Coder LLM cost is a rounding error vs eval `tau2 run`s, so this barely affects budget while making the loop reproducible. Cost + model are logged in `coder_log.json`.
+
+**Alternatives:** Local Claude/Cursor CLI as default (rejected — off-ledger, not reproducible, extra provider provenance); OpenAI tool-use agent loop (deferred — more capable but more code/cost; single-shot structured edits fit "smallest change" + human gate).
+
+**Outcome:** Implemented with a precise, northstar-grounded edit **allowlist** (`lib/allowlist.py`): only `src/tau2/agent/llm_agent.py`, `src/tau2/registry.py`, `src/tau2/utils/llm_utils.py`, `src/tau2/orchestrator/orchestrator.py`, and new `*.py` agent modules under `src/tau2/agent/` are editable; Red-line paths are hard-denied; runner/tooling surfaces excluded to shrink the search space. Verified by `tests/test_proposals.py` (allowlist + monkeypatched-`generate` apply tests). Full suite green.
+
+---
+
 ## Template for future entries
 
 ```

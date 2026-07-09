@@ -8,6 +8,9 @@ Run:
 from __future__ import annotations
 
 import argparse
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 from lib.bootstrap import bootstrap
@@ -18,8 +21,48 @@ from dashboard_v3 import data  # noqa: E402
 from fastapi import FastAPI, HTTPException  # noqa: E402
 from fastapi.responses import FileResponse, JSONResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
+from pydantic import BaseModel  # noqa: E402
 
 CLIENT_DIR = Path(__file__).parent / "client"
+HARNESS_OPT_ROOT = Path(__file__).resolve().parents[1]
+CLI = HARNESS_OPT_ROOT / "cli.py"
+
+
+class ProposeRequest(BaseModel):
+    cluster: str
+    coder: str = "auto"
+    coder_model: str | None = None
+    lineage: str | None = None
+    baseline: str | None = None
+    do_eval: bool = False
+
+
+def _run_cli(args: list[str], timeout_s: int) -> dict:
+    """Shell the harness-opt CLI (propose/accept/reject) and capture output."""
+    cmd = [sys.executable, str(CLI), *args]
+    env = {**os.environ, "PYTHONPATH": str(HARNESS_OPT_ROOT)}
+    try:
+        proc = subprocess.run(
+            cmd,
+            cwd=str(HARNESS_OPT_ROOT),
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=timeout_s,
+        )
+    except subprocess.TimeoutExpired:
+        return {
+            "ok": False,
+            "returncode": None,
+            "stdout": "",
+            "stderr": f"timed out after {timeout_s}s",
+        }
+    return {
+        "ok": proc.returncode == 0,
+        "returncode": proc.returncode,
+        "stdout": proc.stdout[-8000:],
+        "stderr": proc.stderr[-8000:],
+    }
 
 
 def create_app() -> FastAPI:
@@ -57,6 +100,49 @@ def create_app() -> FastAPI:
         if not data.report_exists(run):
             raise HTTPException(404, f"run not found: {run}")
         return data.embedding(run)
+
+    # ---- Phase 2: proposals + lineages ----
+
+    @app.get("/api/lineages")
+    def api_lineages():
+        return data.list_lineages()
+
+    @app.get("/api/runs/{run}/proposals")
+    def api_proposals(run: str):
+        return data.proposals_index(run)
+
+    @app.get("/api/runs/{run}/proposals/{proposal_id}")
+    def api_proposal(run: str, proposal_id: str):
+        detail = data.proposal_detail(run, proposal_id)
+        if detail is None:
+            raise HTTPException(404, f"proposal not found: {proposal_id}")
+        return detail
+
+    @app.post("/api/runs/{run}/propose")
+    def api_propose(run: str, req: ProposeRequest):
+        args = ["propose", "--run", run, "--cluster", req.cluster, "--coder", req.coder]
+        if req.coder_model:
+            args += ["--coder-model", req.coder_model]
+        if req.lineage:
+            args += ["--lineage", req.lineage]
+        if req.baseline:
+            args += ["--baseline", req.baseline]
+        if req.do_eval:
+            args += ["--eval"]
+        # draft (no eval) is quick; --eval runs tau2 and can take minutes.
+        return _run_cli(args, timeout_s=2400 if req.do_eval else 420)
+
+    @app.post("/api/runs/{run}/proposals/{proposal_id}/accept")
+    def api_accept(run: str, proposal_id: str):
+        return _run_cli(
+            ["accept", "--run", run, "--proposal", proposal_id], timeout_s=120
+        )
+
+    @app.post("/api/runs/{run}/proposals/{proposal_id}/reject")
+    def api_reject(run: str, proposal_id: str):
+        return _run_cli(
+            ["reject", "--run", run, "--proposal", proposal_id], timeout_s=120
+        )
 
     @app.get("/api/runs/{run}/sims/{sim_id}")
     def api_sim(run: str, sim_id: str):

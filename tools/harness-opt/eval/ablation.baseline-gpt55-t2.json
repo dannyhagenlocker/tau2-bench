@@ -1,0 +1,444 @@
+{
+  "run": "baseline-gpt55-t2",
+  "n_labeled": 36,
+  "n_classes": 6,
+  "signature_reference": {
+    "v_measure": 0.647,
+    "homogeneity": 1.0,
+    "completeness": 0.478,
+    "ari": 0.204,
+    "n_clusters": 21
+  },
+  "best": {
+    "v_measure": 0.769,
+    "homogeneity": 0.769,
+    "completeness": 0.769,
+    "ari": 0.697,
+    "n_clusters": 6,
+    "threshold": 0.3,
+    "embedder": "st",
+    "subset": "core+last_message"
+  },
+  "best_by_ari": {
+    "v_measure": 0.769,
+    "homogeneity": 0.769,
+    "completeness": 0.769,
+    "ari": 0.697,
+    "n_clusters": 6,
+    "threshold": 0.3,
+    "embedder": "st",
+    "subset": "core+last_message"
+  },
+  "marginal_over_core": {
+    "embedder": "st",
+    "core_v_measure": 0.443,
+    "deltas": {
+      "nl": 0.103,
+      "escalation": 0.083,
+      "last_message": 0.326,
+      "tool_errors": 0.0
+    }
+  },
+  "results": [
+    {
+      "v_measure": 0.615,
+      "homogeneity": 0.904,
+      "completeness": 0.466,
+      "ari": 0.216,
+      "n_clusters": 17,
+      "threshold": 0.3,
+      "embedder": "tfidf",
+      "subset": "core"
+    },
+    {
+      "v_measure": 0.615,
+      "homogeneity": 0.904,
+      "completeness": 0.466,
+      "ari": 0.216,
+      "n_clusters": 17,
+      "threshold": 0.3,
+      "embedder": "tfidf",
+      "subset": "core+nl"
+    },
+    {
+      "v_measure": 0.621,
+      "homogeneity": 0.972,
+      "completeness": 0.456,
+      "ari": 0.153,
+      "n_clusters": 21,
+      "threshold": 0.2,
+      "embedder": "tfidf",
+      "subset": "core+escalation"
+    },
+    {
+      "v_measure": 0.671,
+      "homogeneity": 0.826,
+      "completeness": 0.565,
+      "ari": 0.467,
+      "n_clusters": 12,
+      "threshold": 0.6,
+      "embedder": "tfidf",
+      "subset": "core+last_message"
+    },
+    {
+      "v_measure": 0.615,
+      "homogeneity": 0.858,
+      "completeness": 0.479,
+      "ari": 0.241,
+      "n_clusters": 15,
+      "threshold": 0.4,
+      "embedder": "tfidf",
+      "subset": "core+tool_errors"
+    },
+    {
+      "v_measure": 0.657,
+      "homogeneity": 0.904,
+      "completeness": 0.516,
+      "ari": 0.329,
+      "n_clusters": 14,
+      "threshold": 0.5,
+      "embedder": "tfidf",
+      "subset": "core+mechanism"
+    },
+    {
+      "v_measure": 0.671,
+      "homogeneity": 0.826,
+      "completeness": 0.565,
+      "ari": 0.467,
+      "n_clusters": 12,
+      "threshold": 0.6,
+      "embedder": "tfidf",
+      "subset": "core+last+mechanism"
+    },
+    {
+      "v_measure": 0.671,
+      "homogeneity": 0.826,
+      "completeness": 0.565,
+      "ari": 0.467,
+      "n_clusters": 12,
+      "threshold": 0.6,
+      "embedder": "tfidf",
+      "subset": "core+esc+last"
+    },
+    {
+      "v_measure": 0.671,
+      "homogeneity": 0.826,
+      "completeness": 0.565,
+      "ari": 0.467,
+      "n_clusters": 12,
+      "threshold": 0.7,
+      "embedder": "tfidf",
+      "subset": "core+esc+last+nl"
+    },
+    {
+      "v_measure": 0.671,
+      "homogeneity": 0.826,
+      "completeness": 0.565,
+      "ari": 0.467,
+      "n_clusters": 12,
+      "threshold": 0.7,
+      "embedder": "tfidf",
+      "subset": "all_why"
+    },
+    {
+      "v_measure": 0.635,
+      "homogeneity": 0.886,
+      "completeness": 0.495,
+      "ari": 0.25,
+      "n_clusters": 15,
+      "threshold": 0.2,
+      "embedder": "char",
+      "subset": "core"
+    },
+    {
+      "v_measure": 0.63,
+      "homogeneity": 0.875,
+      "completeness": 0.492,
+      "ari": 0.247,
+      "n_clusters": 15,
+      "threshold": 0.2,
+      "embedder": "char",
+      "subset": "core+nl"
+    },
+    {
+      "v_measure": 0.684,
+      "homogeneity": 0.961,
+      "completeness": 0.531,
+      "ari": 0.293,
+      "n_clusters": 14,
+      "threshold": 0.2,
+      "embedder": "char",
+      "subset": "core+escalation"
+    },
+    {
+      "v_measure": 0.63,
+      "homogeneity": 0.736,
+      "completeness": 0.551,
+      "ari": 0.387,
+      "n_clusters": 8,
+      "threshold": 0.5,
+      "embedder": "char",
+      "subset": "core+last_message"
+    },
+    {
+      "v_measure": 0.619,
+      "homogeneity": 0.875,
+      "completeness": 0.478,
+      "ari": 0.203,
+      "n_clusters": 15,
+      "threshold": 0.2,
+      "embedder": "char",
+      "subset": "core+tool_errors"
+    },
+    {
+      "v_measure": 0.67,
+      "homogeneity": 0.961,
+      "completeness": 0.515,
+      "ari": 0.281,
+      "n_clusters": 16,
+      "threshold": 0.2,
+      "embedder": "char",
+      "subset": "core+mechanism"
+    },
+    {
+      "v_measure": 0.646,
+      "homogeneity": 0.831,
+      "completeness": 0.529,
+      "ari": 0.326,
+      "n_clusters": 11,
+      "threshold": 0.4,
+      "embedder": "char",
+      "subset": "core+last+mechanism"
+    },
+    {
+      "v_measure": 0.655,
+      "homogeneity": 0.822,
+      "completeness": 0.544,
+      "ari": 0.38,
+      "n_clusters": 11,
+      "threshold": 0.4,
+      "embedder": "char",
+      "subset": "core+esc+last"
+    },
+    {
+      "v_measure": 0.645,
+      "homogeneity": 0.864,
+      "completeness": 0.515,
+      "ari": 0.306,
+      "n_clusters": 12,
+      "threshold": 0.4,
+      "embedder": "char",
+      "subset": "core+esc+last+nl"
+    },
+    {
+      "v_measure": 0.691,
+      "homogeneity": 0.786,
+      "completeness": 0.616,
+      "ari": 0.491,
+      "n_clusters": 8,
+      "threshold": 0.5,
+      "embedder": "char",
+      "subset": "all_why"
+    },
+    {
+      "v_measure": 0.615,
+      "homogeneity": 0.904,
+      "completeness": 0.466,
+      "ari": 0.216,
+      "n_clusters": 17,
+      "threshold": 0.3,
+      "embedder": "lsa",
+      "subset": "core"
+    },
+    {
+      "v_measure": 0.615,
+      "homogeneity": 0.904,
+      "completeness": 0.466,
+      "ari": 0.216,
+      "n_clusters": 17,
+      "threshold": 0.3,
+      "embedder": "lsa",
+      "subset": "core+nl"
+    },
+    {
+      "v_measure": 0.621,
+      "homogeneity": 0.972,
+      "completeness": 0.456,
+      "ari": 0.153,
+      "n_clusters": 21,
+      "threshold": 0.2,
+      "embedder": "lsa",
+      "subset": "core+escalation"
+    },
+    {
+      "v_measure": 0.671,
+      "homogeneity": 0.826,
+      "completeness": 0.565,
+      "ari": 0.467,
+      "n_clusters": 12,
+      "threshold": 0.6,
+      "embedder": "lsa",
+      "subset": "core+last_message"
+    },
+    {
+      "v_measure": 0.615,
+      "homogeneity": 0.858,
+      "completeness": 0.479,
+      "ari": 0.241,
+      "n_clusters": 15,
+      "threshold": 0.4,
+      "embedder": "lsa",
+      "subset": "core+tool_errors"
+    },
+    {
+      "v_measure": 0.657,
+      "homogeneity": 0.904,
+      "completeness": 0.516,
+      "ari": 0.329,
+      "n_clusters": 14,
+      "threshold": 0.5,
+      "embedder": "lsa",
+      "subset": "core+mechanism"
+    },
+    {
+      "v_measure": 0.671,
+      "homogeneity": 0.826,
+      "completeness": 0.565,
+      "ari": 0.467,
+      "n_clusters": 12,
+      "threshold": 0.6,
+      "embedder": "lsa",
+      "subset": "core+last+mechanism"
+    },
+    {
+      "v_measure": 0.671,
+      "homogeneity": 0.826,
+      "completeness": 0.565,
+      "ari": 0.467,
+      "n_clusters": 12,
+      "threshold": 0.6,
+      "embedder": "lsa",
+      "subset": "core+esc+last"
+    },
+    {
+      "v_measure": 0.671,
+      "homogeneity": 0.826,
+      "completeness": 0.565,
+      "ari": 0.467,
+      "n_clusters": 12,
+      "threshold": 0.7,
+      "embedder": "lsa",
+      "subset": "core+esc+last+nl"
+    },
+    {
+      "v_measure": 0.671,
+      "homogeneity": 0.826,
+      "completeness": 0.565,
+      "ari": 0.467,
+      "n_clusters": 12,
+      "threshold": 0.7,
+      "embedder": "lsa",
+      "subset": "all_why"
+    },
+    {
+      "v_measure": 0.443,
+      "homogeneity": 0.384,
+      "completeness": 0.524,
+      "ari": 0.333,
+      "n_clusters": 3,
+      "threshold": 0.2,
+      "embedder": "st",
+      "subset": "core"
+    },
+    {
+      "v_measure": 0.546,
+      "homogeneity": 0.573,
+      "completeness": 0.522,
+      "ari": 0.304,
+      "n_clusters": 7,
+      "threshold": 0.2,
+      "embedder": "st",
+      "subset": "core+nl"
+    },
+    {
+      "v_measure": 0.526,
+      "homogeneity": 0.481,
+      "completeness": 0.58,
+      "ari": 0.36,
+      "n_clusters": 4,
+      "threshold": 0.2,
+      "embedder": "st",
+      "subset": "core+escalation"
+    },
+    {
+      "v_measure": 0.769,
+      "homogeneity": 0.769,
+      "completeness": 0.769,
+      "ari": 0.697,
+      "n_clusters": 6,
+      "threshold": 0.3,
+      "embedder": "st",
+      "subset": "core+last_message"
+    },
+    {
+      "v_measure": 0.443,
+      "homogeneity": 0.384,
+      "completeness": 0.524,
+      "ari": 0.333,
+      "n_clusters": 3,
+      "threshold": 0.2,
+      "embedder": "st",
+      "subset": "core+tool_errors"
+    },
+    {
+      "v_measure": 0.653,
+      "homogeneity": 0.622,
+      "completeness": 0.686,
+      "ari": 0.479,
+      "n_clusters": 5,
+      "threshold": 0.2,
+      "embedder": "st",
+      "subset": "core+mechanism"
+    },
+    {
+      "v_measure": 0.769,
+      "homogeneity": 0.769,
+      "completeness": 0.769,
+      "ari": 0.697,
+      "n_clusters": 6,
+      "threshold": 0.3,
+      "embedder": "st",
+      "subset": "core+last+mechanism"
+    },
+    {
+      "v_measure": 0.769,
+      "homogeneity": 0.769,
+      "completeness": 0.769,
+      "ari": 0.697,
+      "n_clusters": 6,
+      "threshold": 0.3,
+      "embedder": "st",
+      "subset": "core+esc+last"
+    },
+    {
+      "v_measure": 0.716,
+      "homogeneity": 0.841,
+      "completeness": 0.624,
+      "ari": 0.531,
+      "n_clusters": 10,
+      "threshold": 0.2,
+      "embedder": "st",
+      "subset": "core+esc+last+nl"
+    },
+    {
+      "v_measure": 0.716,
+      "homogeneity": 0.841,
+      "completeness": 0.624,
+      "ari": 0.531,
+      "n_clusters": 10,
+      "threshold": 0.2,
+      "embedder": "st",
+      "subset": "all_why"
+    }
+  ]
+}
