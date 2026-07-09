@@ -18,6 +18,7 @@ checkout or force-updates refs.
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -45,7 +46,7 @@ def proposal_branch(proposal_id: str) -> str:
     return f"proposal/{proposal_id}"
 
 
-def _git(repo: Path, *args: str, check: bool = True) -> str:
+def _git(repo: Path, *args: str, check: bool = True, strip: bool = True) -> str:
     proc = subprocess.run(
         ["git", *args],
         cwd=str(repo),
@@ -56,7 +57,7 @@ def _git(repo: Path, *args: str, check: bool = True) -> str:
         raise RuntimeError(
             f"git {' '.join(args)} failed (code {proc.returncode}):\n{proc.stderr.strip()}"
         )
-    return proc.stdout.strip()
+    return proc.stdout.strip() if strip else proc.stdout
 
 
 def _branch_exists(repo: Path, branch: str) -> bool:
@@ -67,6 +68,52 @@ def _branch_exists(repo: Path, branch: str) -> bool:
         ).returncode
         == 0
     )
+
+
+# Paths some sandboxes refuse to create ("Operation not permitted") and that a
+# lineage worktree never needs. Excluded via sparse-checkout so `git checkout`
+# doesn't choke on them.
+_WORKTREE_EXCLUDE = (".cursor",)
+
+
+def _add_worktree(repo: Path, worktree: Path, branch: str) -> None:
+    """Add a worktree, checking out everything except sandbox-hostile paths."""
+    _git(repo, "worktree", "add", "--no-checkout", str(worktree), branch)
+    try:
+        _git(worktree, "sparse-checkout", "init", "--no-cone")
+        patterns = ["/*"] + [f"!/{p}/" for p in _WORKTREE_EXCLUDE]
+        _git(worktree, "sparse-checkout", "set", *patterns)
+        _git(worktree, "checkout")
+    except RuntimeError:
+        # Older git without sparse-checkout: fall back to a plain checkout.
+        _git(worktree, "checkout")
+
+
+def _worktree_healthy(worktree: Path) -> bool:
+    # A broken (never-checked-out) worktree contains only the `.git` pointer;
+    # a healthy one has checked-out files.
+    if not worktree.exists():
+        return False
+    return any(p.name != ".git" for p in worktree.iterdir())
+
+
+def _worktree_for_branch(repo: Path, branch: str) -> Optional[Path]:
+    """Return the path of the (repo-wide) worktree holding ``branch``, if any.
+
+    A git branch can be checked out in only one worktree across the whole repo,
+    including sibling worktrees (e.g. main vs a feature worktree). We must reuse
+    that worktree rather than trying to add a second one for the same branch.
+    """
+    out = _git(repo, "worktree", "list", "--porcelain", check=False)
+    current: Optional[Path] = None
+    for line in out.splitlines():
+        if line.startswith("worktree "):
+            current = Path(line[len("worktree ") :].strip())
+        elif line.startswith("branch ") and current is not None:
+            ref = line[len("branch ") :].strip()
+            if ref == f"refs/heads/{branch}":
+                return current
+    return None
 
 
 def base_commit(repo: Path = REPO_ROOT) -> str:
@@ -111,8 +158,10 @@ def ensure_lineage(
     the lineage exists (the base commit is pinned).
     """
     branch = lineage_branch(lineage_id)
-    worktree = lineage_worktree_dir(lineage_id)
     state = load_lineage_state(lineage_id)
+
+    # Clear stale worktree registrations (dirs deleted out from under git).
+    _git(repo, "worktree", "prune", check=False)
 
     if not _branch_exists(repo, branch):
         base_sha = _git(repo, "rev-parse", base or "HEAD")
@@ -120,12 +169,22 @@ def ensure_lineage(
     else:
         base_sha = state.base_commit if state else _git(repo, "rev-parse", branch)
 
-    if not worktree.exists():
-        worktree.parent.mkdir(parents=True, exist_ok=True)
-        _git(repo, "worktree", "add", str(worktree), branch)
+    # Reuse the worktree that already holds this branch anywhere in the repo
+    # (works across sibling checkouts, e.g. main vs a feature worktree), as long
+    # as it's healthy. A prior failed `git worktree add` can leave a registered
+    # but un-checked-out (broken) worktree — repair it by removing and re-adding.
+    existing = _worktree_for_branch(repo, branch)
+    if existing is not None and _worktree_healthy(existing):
+        worktree = existing
     else:
-        # Make sure the worktree is on the lineage branch (not a leftover proposal).
-        _git(worktree, "checkout", branch)
+        if existing is not None:
+            _git(repo, "worktree", "remove", "--force", str(existing), check=False)
+        worktree = lineage_worktree_dir(lineage_id)
+        if worktree.exists():
+            shutil.rmtree(worktree, ignore_errors=True)  # stale/partial dir
+        _git(repo, "worktree", "prune", check=False)
+        worktree.parent.mkdir(parents=True, exist_ok=True)
+        _add_worktree(repo, worktree, branch)
 
     tip = _git(worktree, "rev-parse", "HEAD")
     if state is None:
@@ -213,6 +272,78 @@ def reject_proposal(worktree: Path, lineage_id: str, proposal_id: str) -> None:
     _git(worktree, "checkout", lb)
     if _branch_exists(worktree, pb):
         _git(worktree, "branch", "-D", pb)
+
+
+# --- editing a live proposal (draft/evaluated) -------------------------------
+
+
+def checkout_proposal(worktree: Path, proposal_id: str) -> None:
+    """Check the ephemeral proposal branch back out (for edit/re-eval)."""
+    _git(worktree, "checkout", proposal_branch(proposal_id))
+
+
+def proposal_files(
+    worktree: Path, lineage_id: str, proposal_id: str
+) -> list[dict[str, object]]:
+    """Editable files for a proposal: original (lineage tip) vs modified (branch)."""
+    checkout_proposal(worktree, proposal_id)
+    lb = lineage_branch(lineage_id)
+    pb = proposal_branch(proposal_id)
+    names = _git(worktree, "diff", "--name-only", f"{lb}...{pb}")
+    files: list[dict[str, object]] = []
+    for path in [n for n in names.splitlines() if n.strip()]:
+        original = _git(worktree, "show", f"{lb}:{path}", check=False, strip=False)
+        target = worktree / path
+        modified = target.read_text() if target.exists() else ""
+        files.append(
+            {
+                "path": path,
+                "original": original,
+                "modified": modified,
+                "new_file": not original,
+            }
+        )
+    return files
+
+
+def apply_proposal_files(
+    worktree: Path,
+    lineage_id: str,
+    proposal_id: str,
+    files: dict[str, str],
+) -> tuple[str, str]:
+    """Write human-edited file contents to the proposal branch and re-commit.
+
+    Enforces the allowlist (a human edit still cannot touch forbidden files).
+    Amends the existing proposal commit so the branch stays one clean commit.
+    Returns (patch, shortstat) vs the lineage tip.
+    """
+    from lib.allowlist import assert_allowed, normalize
+
+    assert_allowed(list(files.keys()))
+    checkout_proposal(worktree, proposal_id)
+    for path, content in files.items():
+        target = worktree / normalize(path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content)
+
+    _git(worktree, "add", "-A")
+    if _git(worktree, "status", "--porcelain").strip():
+        lb = lineage_branch(lineage_id)
+        pb = proposal_branch(proposal_id)
+        ahead = _git(worktree, "rev-list", "--count", f"{lb}..{pb}")
+        if ahead != "0":
+            _git(worktree, "commit", "--amend", "--no-edit", "--no-verify")
+        else:
+            _git(
+                worktree,
+                "commit",
+                "-m",
+                f"proposal {proposal_id}: manual edit",
+                "--no-verify",
+            )
+    patch, shortstat = diff_vs_lineage(worktree, lineage_id, proposal_id)
+    return patch, shortstat
 
 
 def record_accepted(

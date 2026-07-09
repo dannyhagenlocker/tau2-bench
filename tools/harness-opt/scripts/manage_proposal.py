@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import subprocess
 from datetime import datetime, timezone
 from typing import Optional
@@ -99,6 +100,20 @@ def run_reject(run_name: str, proposal_id: str) -> ProposalMetadataArtifact:
     return meta
 
 
+def run_delete(run_name: str, proposal_id: str) -> None:
+    """Fully remove a proposal: delete its ephemeral branch AND its artifacts.
+
+    Unlike `reject` (which keeps the audit trail), delete is destructive — use it
+    to discard a draft you don't want cluttering the run.
+    """
+    meta = _load_meta(run_name, proposal_id)
+    lineage_id = meta.lineage_id or run_name
+    worktree, _ = lin.ensure_lineage(lineage_id)
+    lin.reject_proposal(worktree, lineage_id, proposal_id)  # drop branch, keep lineage
+    shutil.rmtree(proposal_dir(run_name, proposal_id), ignore_errors=True)
+    rewrite_all(run_name)
+
+
 def run_list(run_name: Optional[str] = None) -> None:
     if run_name:
         rewrite_all(run_name)
@@ -127,6 +142,10 @@ def main() -> None:
     p_reject.add_argument("--run", required=True)
     p_reject.add_argument("--proposal", required=True)
 
+    p_delete = sub.add_parser("delete")
+    p_delete.add_argument("--run", required=True)
+    p_delete.add_argument("--proposal", required=True)
+
     p_list = sub.add_parser("list")
     p_list.add_argument("--run")
 
@@ -139,6 +158,9 @@ def main() -> None:
     elif args.command == "reject":
         meta = run_reject(args.run, args.proposal)
         print(f"Rejected {meta.proposal_id}")
+    elif args.command == "delete":
+        run_delete(args.run, args.proposal)
+        print(f"Deleted {args.proposal}")
     elif args.command == "list":
         run_list(args.run)
 
