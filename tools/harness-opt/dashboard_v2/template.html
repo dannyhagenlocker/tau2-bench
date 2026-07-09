@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>harness-opt · trace viewer</title>
+<style>
+  :root {
+    --bg:#f7f8fa; --panel:#fff; --border:#e2e5ea; --text:#1f2430; --muted:#6b7280;
+    --accent:#2563eb; --user:#2563eb; --assistant:#0d9488; --call:#7c3aed;
+    --result:#16a34a; --error:#dc2626;
+    --add-bg:#e6ffed; --rem-bg:#ffeef0; --rep-bg:#fff8c5; --del:#ffd7d5; --ins:#abf2bc;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font:13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; color:var(--text); background:var(--bg); }
+  code,pre,.mono { font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; }
+  header { padding:10px 16px; background:var(--panel); border-bottom:1px solid var(--border); display:flex; gap:16px; align-items:baseline; flex-wrap:wrap; }
+  header h1 { font-size:15px; margin:0; }
+  header .meta { color:var(--muted); font-size:12px; }
+  .layout { display:grid; grid-template-columns:330px 1fr; height:calc(100vh - 44px); }
+  .sidebar { border-right:1px solid var(--border); overflow:auto; background:var(--panel); }
+  .main { overflow:auto; padding:12px 16px; }
+  .search { width:100%; padding:7px 9px; border:1px solid var(--border); border-radius:6px; margin:10px 0; font-size:12px; }
+  .sec-title { font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:12px 10px 4px; }
+  .l0row { display:flex; justify-content:space-between; padding:2px 10px; font-size:12px; color:var(--muted); }
+  .flaky { padding:5px 10px; display:flex; align-items:center; gap:8px; font-size:12px; border-top:1px dashed #eef1f6; cursor:pointer; }
+  .flaky:hover { background:#fff7ed; }
+  .flaky .lbl { flex:1; } .flaky .go { font-size:11px; color:var(--accent); }
+  .cluster { border-top:1px solid var(--border); }
+  .cluster-head { padding:8px 10px; cursor:pointer; display:flex; gap:8px; align-items:center; }
+  .cluster-head:hover { background:#f0f3f8; }
+  .cluster-head .cnt { background:#eef1f6; border-radius:10px; padding:0 7px; font-size:11px; color:var(--muted); }
+  .cluster-head .cid { font-weight:600; }
+  .cluster-sig { font-size:11px; color:var(--muted); padding:0 10px 6px; word-break:break-all; }
+  .members { display:none; } .cluster.open .members { display:block; }
+  .member { padding:4px 10px 4px 18px; display:flex; align-items:center; gap:6px; font-size:12px; border-top:1px dashed #eef1f6; }
+  .member:hover { background:#f6f8fb; }
+  .member .lbl { flex:1; color:var(--muted); }
+  .member.sel-a { background:#e8f0fe; } .member.sel-b { background:#fde7f3; }
+  .pill { border:1px solid var(--border); border-radius:5px; padding:1px 6px; cursor:pointer; font-size:11px; background:#fff; }
+  .pill:hover { border-color:var(--accent); }
+  .pill.on-a { background:var(--user); color:#fff; border-color:var(--user); }
+  .pill.on-b { background:#db2777; color:#fff; border-color:#db2777; }
+  .ftype { font-size:10px; padding:1px 5px; border-radius:4px; color:#fff; white-space:nowrap; }
+  .ftype.pass{background:var(--result)} .ftype.db_only{background:var(--call)} .ftype.nl_only{background:#ca8a04}
+  .ftype.mixed{background:var(--error)} .ftype.termination{background:#9ca3af} .ftype.communicate_only{background:#0891b2}
+  .controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
+  .slot { border:1px solid var(--border); border-radius:7px; padding:6px 10px; background:var(--panel); font-size:12px; min-width:230px; }
+  .slot .tag { font-weight:600; margin-right:6px; }
+  .btn { border:1px solid var(--border); background:#fff; border-radius:6px; padding:6px 12px; cursor:pointer; font-size:12px; }
+  .btn:hover { border-color:var(--accent); }
+  .btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn:disabled { opacity:.4; cursor:not-allowed; }
+  .badges { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0; }
+  .badge { font-size:11px; background:#eef1f6; border-radius:5px; padding:1px 6px; color:#374151; }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:start; }
+  .panelbox { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:6px 8px; }
+  .wfcap { font-size:11px; color:var(--muted); padding:2px 4px 6px; display:flex; justify-content:space-between; }
+
+  /* waterfall */
+  .wf { font-size:12px; }
+  .wfrow { display:flex; align-items:center; gap:6px; padding:2px 4px; border-radius:5px; white-space:nowrap; }
+  .wfrow:hover { background:#f5f7fb; }
+  .wfrow.err .kbadge { background:var(--error); color:#fff; }
+  .caret { width:14px; text-align:center; cursor:pointer; color:var(--muted); user-select:none; }
+  .caret-empty { width:14px; }
+  .kbadge { font-size:10px; border-radius:4px; padding:1px 6px; color:#fff; flex:none; }
+  .kbadge.user{background:var(--user)} .kbadge.assistant{background:var(--assistant)}
+  .kbadge.tool{background:var(--result)} .kbadge.call{background:var(--call)}
+  .wlabel { flex:1; overflow:hidden; text-overflow:ellipsis; cursor:pointer; }
+  .wlabel:hover { text-decoration:underline; }
+  .track { position:relative; width:200px; height:12px; background:#eef1f6; border-radius:3px; flex:none; }
+  .bar { position:absolute; top:1px; height:10px; border-radius:2px; min-width:2px; }
+  .dur { width:52px; text-align:right; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .cost { width:64px; text-align:right; color:#9ca3af; font-size:11px; }
+  .wdetail { padding:6px 8px; margin:2px 0 6px; background:#fbfcfe; border:1px solid var(--border); border-radius:6px; }
+  .wdetail pre { margin:0; white-space:pre-wrap; word-break:break-word; font-size:12px; max-height:340px; overflow:auto; }
+
+  /* json tree */
+  .json { font-family:"SF Mono",ui-monospace,Menlo,monospace; font-size:12px; }
+  .json details { margin-left:2px; }
+  .json summary { cursor:pointer; color:var(--muted); }
+  .json .j-body { border-left:1px solid var(--border); margin-left:5px; padding-left:9px; }
+  .json .j-row { padding:1px 0; }
+  .j-key { color:#8250df; } .j-str { color:#0a3069; } .j-num { color:#0550ae; }
+  .j-bool { color:#953800; } .j-null { color:#6e7781; }
+
+  /* diff */
+  .difftable { background:var(--panel); border:1px solid var(--border); border-radius:8px; }
+  .drow { display:grid; grid-template-columns:1fr 1fr; border-top:1px solid var(--border); }
+  .dcell { padding:6px 9px; border-left:3px solid transparent; overflow:hidden; }
+  .dcell:first-child { border-right:1px solid var(--border); }
+  .drow.add .dcell.b { background:var(--add-bg); border-left-color:var(--result); }
+  .drow.remove .dcell.a { background:var(--rem-bg); border-left-color:var(--error); }
+  .drow.replace .dcell { background:var(--rep-bg); border-left-color:#d4a72c; }
+  .dcell .shead { font-size:11px; color:var(--muted); margin-bottom:2px; }
+  .dcell pre { margin:0; white-space:pre-wrap; word-break:break-word; font-size:12px; max-height:280px; overflow:auto; }
+  del { background:var(--del); text-decoration:none; } ins { background:var(--ins); text-decoration:none; }
+  .collapsed { text-align:center; color:var(--muted); font-size:11px; padding:5px; cursor:pointer; border-top:1px solid var(--border); background:#fafbfc; }
+  .empty { color:var(--muted); padding:40px; text-align:center; }
+</style>
+</head>
+<body>
+<header><h1>harness-opt · trace viewer</h1><span class="meta" id="runmeta"></span></header>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main" id="main"></main>
+</div>
+
+<script>
+const DATA = /*__PAYLOAD__*/null;
+const state = {
+  a:null, b:null, diff:false, hideEqual:false,
+  openClusters:new Set(),
+  wf:{ a:{collapsed:new Set(),open:new Set()}, b:{collapsed:new Set(),open:new Set()} }
+};
+
+function esc(s){ return (s??"").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+const stepColor = (s) =>
+  s.error ? "#dc2626" : s.kind==="tool_call" ? "#7c3aed" :
+  s.kind==="tool_result" ? "#16a34a" : s.lane==="user" ? "#2563eb" :
+  s.lane==="assistant" ? "#0d9488" : "#9ca3af";
+const kindLabel = (n) =>
+  n.kind==="tool_call" ? "call" : n.kind==="tool_result" ? "result" : n.lane;
+const kbadgeClass = (n) =>
+  n.kind==="tool_call" ? "call" : n.kind==="tool_result" ? "tool" : n.lane;
+
+// ---------- pretty JSON (native <details>, collapsed by default) ----------
+function jsonHtml(v, depth){
+  if (v === null) return `<span class="j-null">null</span>`;
+  const t = typeof v;
+  if (t === "number") return `<span class="j-num">${v}</span>`;
+  if (t === "boolean") return `<span class="j-bool">${v}</span>`;
+  if (t === "string") return `<span class="j-str">"${esc(v)}"</span>`;
+  const open = depth < 1 ? " open" : "";
+  if (Array.isArray(v)) {
+    if (!v.length) return `<span>[]</span>`;
+    let s = `<details${open}><summary>[ ] ${v.length} items</summary><div class="j-body">`;
+    v.forEach(x => s += `<div class="j-row">${jsonHtml(x, depth+1)}</div>`);
+    return s + `</div></details>`;
+  }
+  const keys = Object.keys(v);
+  if (!keys.length) return `<span>{}</span>`;
+  let s = `<details${open}><summary>{ } ${keys.length} keys</summary><div class="j-body">`;
+  keys.forEach(k => s += `<div class="j-row"><span class="j-key">${esc(k)}</span>: ${jsonHtml(v[k], depth+1)}</div>`);
+  return s + `</div></details>`;
+}
+function contentHtml(step){
+  const c = step.content || "";
+  if (step.kind === "tool_call" || step.kind === "tool_result") {
+    try { return `<div class="json">${jsonHtml(JSON.parse(c), 0)}</div>`; } catch(e) {}
+  }
+  return `<pre>${esc(c)}</pre>`;
+}
+
+// ---------- waterfall (tree + timing) ----------
+function parents(nodes){
+  const pid = new Array(nodes.length).fill(-1);
+  const stack = [];
+  nodes.forEach((n, i) => {
+    while (stack.length && nodes[stack[stack.length-1]].depth >= n.depth) stack.pop();
+    pid[i] = stack.length ? stack[stack.length-1] : -1;
+    stack.push(i);
+  });
+  return pid;
+}
+function waterfall(id, side){
+  const sim = DATA.sims[id];
+  const nodes = sim.steps;
+  const total = Math.max(sim.total_dur || 0, 0.001);
+  const pid = parents(nodes);
+  const hasKids = nodes.map((_, i) => pid.includes(i));
+  const st = state.wf[side];
+
+  let html = `<div class="wfcap"><span>${esc(id.slice(0,8))} · task ${esc(sim.task_id)} · trial ${sim.trial}
+      · <span class="ftype ${sim.failure_type}">${sim.failure_type}</span> · r=${sim.reward.toFixed(2)}</span>
+      <span>${(sim.total_dur||0).toFixed(2)}s · ${nodes.length} steps · $${(sim.agent_cost||0).toFixed(4)}</span></div>`;
+  html += `<div class="wf">`;
+  nodes.forEach((n, i) => {
+    let p = pid[i], hide = false;
+    while (p !== -1) { if (st.collapsed.has(p)) { hide = true; break; } p = pid[p]; }
+    if (hide) return;
+    const caret = hasKids[i]
+      ? `<span class="caret" data-act="collapse" data-side="${side}" data-i="${i}">${st.collapsed.has(i)?"▸":"▾"}</span>`
+      : `<span class="caret-empty"></span>`;
+    const left = (n.start/total*100).toFixed(2);
+    const w = Math.max(n.dur/total*100, 0.6).toFixed(2);
+    const dur = n.dur >= 0.01 ? n.dur.toFixed(2)+"s" : "";
+    const cost = n.cost ? "$"+n.cost.toFixed(4) : "";
+    html += `<div class="wfrow ${n.kind} ${n.error?"err":""}" style="padding-left:${8+n.depth*16}px">
+      ${caret}
+      <span class="kbadge ${kbadgeClass(n)}">${kindLabel(n)}</span>
+      <span class="wlabel" data-act="open" data-side="${side}" data-i="${i}">${esc(n.label)}</span>
+      <span class="track"><span class="bar" style="left:${left}%;width:${w}%;background:${stepColor(n)}"></span></span>
+      <span class="dur">${dur}</span><span class="cost">${cost}</span>
+    </div>`;
+    if (st.open.has(i)) {
+      html += `<div class="wdetail" style="margin-left:${8+n.depth*16+20}px">${contentHtml(n)}</div>`;
+    }
+  });
+  return html + `</div>`;
+}
+
+// ---------- diff (LCS over step keys) ----------
+function alignSteps(A, B){
+  const n=A.length, m=B.length;
+  const dp = Array.from({length:n+1}, () => new Int32Array(m+1));
+  for (let i=n-1;i>=0;i--) for (let j=m-1;j>=0;j--)
+    dp[i][j] = A[i].key===B[j].key ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j], dp[i][j+1]);
+  const raw=[]; let i=0,j=0;
+  while (i<n && j<m){
+    if (A[i].key===B[j].key){ raw.push({a:A[i],b:B[j],op:"equal"}); i++;j++; }
+    else if (dp[i+1][j]>=dp[i][j+1]){ raw.push({a:A[i],b:null,op:"remove"}); i++; }
+    else { raw.push({a:null,b:B[j],op:"add"}); j++; }
+  }
+  while (i<n) raw.push({a:A[i++],b:null,op:"remove"});
+  while (j<m) raw.push({a:null,b:B[j++],op:"add"});
+  const out=[]; let k=0;
+  while (k<raw.length){
+    if (raw[k].op==="equal"){ out.push(raw[k]); k++; continue; }
+    const rem=[],add=[];
+    while (k<raw.length && raw[k].op!=="equal"){ (raw[k].op==="remove"?rem:add).push(raw[k]); k++; }
+    for (let t=0;t<Math.max(rem.length,add.length);t++){
+      const a=rem[t]?rem[t].a:null, b=add[t]?add[t].b:null;
+      out.push({a,b,op:a&&b?"replace":a?"remove":"add"});
+    }
+  }
+  return out;
+}
+function wordDiff(a,b){
+  a=a??""; b=b??"";
+  if (a===b) return [esc(a),esc(b)];
+  if (a.length>4000||b.length>4000) return [esc(a),esc(b)];
+  const aw=a.split(/(\s+)/), bw=b.split(/(\s+)/), n=aw.length, m=bw.length;
+  const dp=Array.from({length:n+1},()=>new Int32Array(m+1));
+  for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)
+    dp[i][j]=aw[i]===bw[j]?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
+  let i=0,j=0,ao="",bo="";
+  while(i<n&&j<m){
+    if(aw[i]===bw[j]){ao+=esc(aw[i]);bo+=esc(bw[j]);i++;j++;}
+    else if(dp[i+1][j]>=dp[i][j+1]){ao+="<del>"+esc(aw[i])+"</del>";i++;}
+    else{bo+="<ins>"+esc(bw[j])+"</ins>";j++;}
+  }
+  while(i<n)ao+="<del>"+esc(aw[i++])+"</del>";
+  while(j<m)bo+="<ins>"+esc(bw[j++])+"</ins>";
+  return [ao,bo];
+}
+function diffCell(step, side, other){
+  if (!step) return `<div class="dcell ${side}"></div>`;
+  const head = `${kindLabel(step)} ${step.tool?esc(step.tool):""} · #${step.i}`;
+  let body;
+  if (step.kind === "turn") {
+    let content = esc(step.content);
+    if (other && step.content !== other.content) {
+      const [aH,bH] = wordDiff(side==="a"?step.content:other.content, side==="a"?other.content:step.content);
+      content = side==="a"?aH:bH;
+    }
+    body = `<pre>${content}</pre>`;
+  } else {
+    body = contentHtml(step);
+  }
+  return `<div class="dcell ${side}"><div class="shead">${head}</div>${body}</div>`;
+}
+function renderDiff(idA, idB){
+  const rows = alignSteps(DATA.sims[idA].steps, DATA.sims[idB].steps);
+  let html = `<div class="difftable">`, eq=[];
+  const flush = () => {
+    if (!eq.length) return "";
+    if (!state.hideEqual) { const s = eq.map(r=>`<div class="drow equal">${diffCell(r.a,"a",r.b)}${diffCell(r.b,"b",r.a)}</div>`).join(""); eq=[]; return s; }
+    const n=eq.length; eq=[]; return `<div class="collapsed" data-act="showeq">⋯ ${n} unchanged step${n>1?"s":""}</div>`;
+  };
+  for (const r of rows){
+    if (r.op==="equal"){ eq.push(r); continue; }
+    html += flush();
+    html += `<div class="drow ${r.op}">${diffCell(r.a,"a",r.b)}${diffCell(r.b,"b",r.a)}</div>`;
+  }
+  return html + flush() + `</div>`;
+}
+
+// ---------- header for a slot ----------
+function slotHeader(id){
+  if (!id) return "<i>none</i>";
+  const s = DATA.sims[id]; const badges=[];
+  if (s.db_diff_signature) badges.push(`<span class="badge mono">db: ${esc(s.db_diff_signature)}</span>`);
+  if (s.nl_failure_signature) badges.push(`<span class="badge">nl: ${esc(s.nl_failure_signature)}</span>`);
+  (s.flags||[]).forEach(f=>badges.push(`<span class="badge">${esc(f)}</span>`));
+  return `<div class="mono">${esc(id.slice(0,8))} · task ${esc(s.task_id)} · t${s.trial}
+    · <span class="ftype ${s.failure_type}">${s.failure_type}</span> · r=${s.reward.toFixed(2)}</div>
+    <div class="badges">${badges.join("")}</div>`;
+}
+
+function renderMain(){
+  const main = document.getElementById("main");
+  if (!state.a){ main.innerHTML = `<div class="empty">Pick a trace (A) from a cluster — or load a flaky pass↔fail pair on the left.</div>`; return; }
+  const both = state.a && state.b;
+  let html = `<div class="controls">
+    <div class="slot"><span class="tag" style="color:var(--user)">A</span>${slotHeader(state.a)}</div>
+    <div class="slot"><span class="tag" style="color:#db2777">B</span>${slotHeader(state.b)}</div>
+    <button class="btn" data-act="swap" ${both?"":"disabled"}>⇄ Swap</button>
+    <button class="btn" data-act="clearB" ${state.b?"":"disabled"}>Clear B</button>
+    <button class="btn ${state.diff?"active":""}" data-act="diff" ${both?"":"disabled"}>Diff</button>
+    <button class="btn ${state.hideEqual?"active":""}" data-act="hide" ${both&&state.diff?"":"disabled"}>Hide equal</button>
+  </div>`;
+
+  if (!state.b) html += `<div class="panelbox">${waterfall(state.a,"a")}</div>`;
+  else if (state.diff) html += renderDiff(state.a, state.b);
+  else html += `<div class="cols"><div class="panelbox">${waterfall(state.a,"a")}</div><div class="panelbox">${waterfall(state.b,"b")}</div></div>`;
+
+  main.innerHTML = html;
+  wireMain();
+}
+
+function wireMain(){
+  document.querySelectorAll("[data-act]").forEach(el => {
+    const act = el.getAttribute("data-act");
+    el.addEventListener("click", (e) => {
+      if (act === "collapse") {
+        const s = state.wf[el.dataset.side], i = +el.dataset.i;
+        s.collapsed.has(i) ? s.collapsed.delete(i) : s.collapsed.add(i);
+        renderMain();
+      } else if (act === "open") {
+        const s = state.wf[el.dataset.side], i = +el.dataset.i;
+        s.open.has(i) ? s.open.delete(i) : s.open.add(i);
+        renderMain();
+      } else if (act === "swap") { [state.a,state.b]=[state.b,state.a]; resetWf(); renderSidebar(); renderMain(); }
+      else if (act === "clearB") { state.b=null; state.diff=false; state.hideEqual=false; renderSidebar(); renderMain(); }
+      else if (act === "diff") { state.diff=!state.diff; renderMain(); }
+      else if (act === "hide") { state.hideEqual=!state.hideEqual; renderMain(); }
+      else if (act === "showeq") { state.hideEqual=false; renderMain(); }
+    });
+  });
+}
+function resetWf(){ state.wf = { a:{collapsed:new Set(),open:new Set()}, b:{collapsed:new Set(),open:new Set()} }; }
+
+// ---------- sidebar ----------
+function renderSidebar(filter){
+  const sb = document.getElementById("sidebar");
+  const f = (filter||"").toLowerCase();
+  let html = `<input class="search" id="search" placeholder="filter clusters / tasks / signature…" value="${esc(filter||"")}">`;
+
+  if ((DATA.flaky||[]).length){
+    html += `<div class="sec-title">⚡ Flaky tasks — pass vs fail (${DATA.flaky.length})</div>`;
+    DATA.flaky.forEach(fl => {
+      if (f && !String(fl.task_id).toLowerCase().includes(f)) return;
+      html += `<div class="flaky" data-act="flaky" data-pass="${fl.pass_sim}" data-fail="${fl.fail_sim}">
+        <span class="lbl">task <b>${esc(fl.task_id)}</b> · ${fl.n_trials} trials</span>
+        <span class="go">load pass↔fail →</span></div>`;
+    });
+  }
+
+  html += `<div class="sec-title">Failure taxonomy</div>`;
+  DATA.l0.forEach(c => html += `<div class="l0row"><span>${esc(c.name)}</span><span>${c.count}</span></div>`);
+
+  html += `<div class="sec-title">Clusters (${DATA.clusters.length})</div>`;
+  DATA.clusters.forEach(c => {
+    const hay = (c.id+" "+c.failure_type+" "+c.signature+" "+c.sims.map(s=>DATA.sims[s]?.task_id).join(" ")).toLowerCase();
+    if (f && !hay.includes(f)) return;
+    const members = c.sims.map(sid => {
+      const s = DATA.sims[sid];
+      return `<div class="member ${state.a===sid?"sel-a":""} ${state.b===sid?"sel-b":""}">
+        <span class="lbl">task ${esc(s.task_id)} · t${s.trial} · r=${s.reward.toFixed(1)}</span>
+        <span class="pill ${state.a===sid?"on-a":""}" data-act="pickA" data-sid="${sid}">A</span>
+        <span class="pill ${state.b===sid?"on-b":""}" data-act="pickB" data-sid="${sid}">B</span>
+      </div>`;
+    }).join("");
+    html += `<div class="cluster ${state.openClusters.has(c.id)?"open":""}" data-cid="${c.id}">
+      <div class="cluster-head" data-act="toggleCluster" data-cid="${c.id}">
+        <span class="cid">${c.id}</span><span class="ftype ${c.failure_type}">${c.failure_type}</span><span class="cnt">${c.count}</span>
+      </div>
+      <div class="cluster-sig">${esc(c.signature||c.name)}</div>
+      <div class="members">${members}</div>
+    </div>`;
+  });
+  sb.innerHTML = html;
+  wireSidebar();
+}
+function wireSidebar(){
+  const search = document.getElementById("search");
+  search.addEventListener("input", e => { renderSidebar(e.target.value); document.getElementById("search").focus(); });
+  document.querySelectorAll(".sidebar [data-act]").forEach(el => {
+    const act = el.getAttribute("data-act");
+    el.addEventListener("click", () => {
+      if (act === "pickA") { state.a = el.dataset.sid; resetWf(); renderSidebar(search.value); renderMain(); }
+      else if (act === "pickB") { if (state.a===el.dataset.sid) return; state.b = el.dataset.sid; resetWf(); renderSidebar(search.value); renderMain(); }
+      else if (act === "flaky") { state.a=el.dataset.pass; state.b=el.dataset.fail; state.diff=true; resetWf(); renderSidebar(search.value); renderMain(); }
+      else if (act === "toggleCluster") {
+        const cid = el.dataset.cid;
+        state.openClusters.has(cid) ? state.openClusters.delete(cid) : state.openClusters.add(cid);
+        document.querySelector(`.cluster[data-cid="${cid}"]`)?.classList.toggle("open");
+      }
+    });
+  });
+}
+
+function boot(){
+  if (!DATA){ document.getElementById("main").innerHTML = `<div class="empty">No data embedded.</div>`; return; }
+  const m = DATA.manifest;
+  document.getElementById("runmeta").innerHTML =
+    `run <b>${esc(DATA.run)}</b> · ${m.domain} · ${m.num_simulations} sims · pass ${(DATA.pass_rate*100).toFixed(1)}%`
+    + ` · agent ${esc(m.agent_llm||"—")} · generated ${esc(DATA.generated_at.slice(0,19))}`;
+  renderSidebar("");
+  renderMain();
+}
+boot();
+</script>
+</body>
+</html>
