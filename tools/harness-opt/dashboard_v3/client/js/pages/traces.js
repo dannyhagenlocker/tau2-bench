@@ -18,7 +18,7 @@ export function TracesPage() {
     hideEqual: false,
     showReason: false,
     mode: "clusters", // 'clusters' | 'tasks'
-    flakyOnly: false,
+    taskFilter: "all", // all | passed | flaky | failed
   };
   const openClusters = new Set();
   const openTasks = new Set();
@@ -111,20 +111,32 @@ export function TracesPage() {
     return seg;
   }
 
-  function toggleSwitch(label, on, onClick) {
-    return h(
-      "label",
-      { class: "toggle" + (on ? " on" : ""), onClick },
-      h("span", { class: "toggle-track" }, h("span", { class: "toggle-knob" })),
-      h("span", { class: "toggle-lbl" }, label),
-    );
-  }
-
   function taskStatus(sims) {
     const passN = sims.filter((sid) => s.sims[sid].reward >= 0.999).length;
     const kind = passN === sims.length ? "pass" : passN === 0 ? "fail" : "flaky";
     return { passN, total: sims.length, kind };
   }
+
+  function taskFilterBar() {
+    const opts = [["all", "All"], ["passed", "Passed"], ["flaky", "Flaky"], ["failed", "Failed"]];
+    return h(
+      "div",
+      { class: "filter-pills" },
+      ...opts.map(([v, label]) =>
+        h(
+          "button",
+          {
+            class: `fpill ${v}` + (state.taskFilter === v ? " on" : ""),
+            onClick: () => { state.taskFilter = v; buildLeft(); },
+          },
+          label,
+        ),
+      ),
+    );
+  }
+
+  // outcome kind ('pass'/'fail'/'flaky') that a filter value selects
+  const FILTER_KIND = { passed: "pass", failed: "fail", flaky: "flaky" };
 
   function buildClusters(container, f) {
     container.appendChild(h("div", { class: "sec-title" }, `Failure clusters (${s.clusters.length})`));
@@ -158,10 +170,10 @@ export function TracesPage() {
 
   function buildTasks(container, f) {
     taskIds.forEach((task) => {
-      if (state.flakyOnly && !flakyByTask[task]) return;
-      if (f && !String(task).toLowerCase().includes(f)) return;
       const sims = byTask[task];
       const { passN, total, kind } = taskStatus(sims);
+      if (state.taskFilter !== "all" && kind !== FILTER_KIND[state.taskFilter]) return;
+      if (f && !String(task).toLowerCase().includes(f)) return;
       const isFlaky = !!flakyByTask[task];
       const isOpen = openTasks.has(task);
       const head = h(
@@ -221,7 +233,7 @@ export function TracesPage() {
         h(
           "div",
           { class: "task-tools" },
-          toggleSwitch("flaky only", state.flakyOnly, () => { state.flakyOnly = !state.flakyOnly; buildLeft(); }),
+          taskFilterBar(),
           h("span", { class: "muted tiny" }, `${taskIds.length} tasks · ${(s.flaky || []).length} flaky`),
         ),
       );

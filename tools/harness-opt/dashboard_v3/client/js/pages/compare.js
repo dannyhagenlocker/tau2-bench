@@ -35,7 +35,7 @@ function totals(sims) {
     n += 1;
     if (x.reward >= PASS) pass += 1;
   }
-  return { cost, meanSteps: n ? steps / n : 0, n, passRate: n ? pass / n : 0 };
+  return { cost, meanSteps: n ? steps / n : 0, n, pass, fail: n - pass, passRate: n ? pass / n : 0 };
 }
 
 function candFailSim(candSims, taskId) {
@@ -98,21 +98,56 @@ export function ComparePage() {
   // ---- 1. headline metric table ----
   function headline(base, cand, baseName) {
     const tb = totals(base.sims), tc = totals(cand.sims);
-    const row = (label, b, c, delta) =>
-      h("tr", {}, h("td", { class: "muted" }, label), h("td", {}, b), h("td", {}, c), h("td", {}, delta || ""));
-    const dpp = ((tc.passRate - tb.passRate) * 100);
-    const deltaEl = h("span", { class: dpp >= 0 ? "up" : "down" }, `${dpp >= 0 ? "▲" : "▼"} ${Math.abs(dpp).toFixed(1)} pp`);
+    const EPS = 1e-9;
+
+    // delta cell: arrow shows direction, color shows sentiment (green=improvement)
+    const dcell = (delta, higherIsBetter, fmt) => {
+      if (delta == null || Number.isNaN(delta)) return h("td", {}, "—");
+      if (Math.abs(delta) < EPS) return h("td", { class: "muted" }, "—");
+      const good = higherIsBetter ? delta > 0 : delta < 0;
+      const arrow = delta > 0 ? "▲" : "▼";
+      return h("td", { class: good ? "up" : "down" }, `${arrow} ${fmt(Math.abs(delta))}`);
+    };
+    const row = (label, b, c, deltaTd) =>
+      h("tr", {}, h("td", { class: "muted" }, label), h("td", {}, b), h("td", {}, c), deltaTd || h("td", {}, "—"));
+
     const tbl = h(
       "table",
       { class: "tbl cmp-headline" },
       h("tr", {}, h("th", {}, "metric"), h("th", {}, baseName), h("th", {}, store.run + " (candidate)"), h("th", {}, "Δ")),
       row("agent LLM", base.manifest.agent_llm || "—", cand.manifest.agent_llm || "—"),
-      row("pass rate", (tb.passRate * 100).toFixed(1) + "%", (tc.passRate * 100).toFixed(1) + "%", deltaEl),
-      row("failing sims", tb.n - Math.round(tb.passRate * tb.n), tc.n - Math.round(tc.passRate * tc.n)),
-      row("total agent cost", "$" + tb.cost.toFixed(2), "$" + tc.cost.toFixed(2), `$${(tc.cost - tb.cost >= 0 ? "+" : "") + (tc.cost - tb.cost).toFixed(2)}`),
-      row("avg steps / sim", tb.meanSteps.toFixed(1), tc.meanSteps.toFixed(1)),
+      row(
+        "pass rate",
+        (tb.passRate * 100).toFixed(1) + "%",
+        (tc.passRate * 100).toFixed(1) + "%",
+        dcell((tc.passRate - tb.passRate) * 100, true, (v) => v.toFixed(1) + " pp"),
+      ),
+      row(
+        "passing sims",
+        `${tb.pass} / ${tb.n}`,
+        `${tc.pass} / ${tc.n}`,
+        dcell(tc.pass - tb.pass, true, (v) => String(Math.round(v))),
+      ),
+      row(
+        "total agent cost",
+        "$" + tb.cost.toFixed(2),
+        "$" + tc.cost.toFixed(2),
+        dcell(tc.cost - tb.cost, false, (v) => "$" + v.toFixed(2)),
+      ),
+      row(
+        "avg steps / sim",
+        tb.meanSteps.toFixed(1),
+        tc.meanSteps.toFixed(1),
+        dcell(tc.meanSteps - tb.meanSteps, false, (v) => v.toFixed(1)),
+      ),
     );
-    return h("div", { class: "panel" }, h("h3", {}, "Headline"), tbl);
+    return h(
+      "div",
+      { class: "panel" },
+      h("h3", {}, "Headline"),
+      tbl,
+      h("div", { class: "muted tiny", style: { marginTop: "6px" } }, "Δ arrow = direction of change; color = improvement (green) vs regression (red)."),
+    );
   }
 
   // ---- 2. task outcome flow (2x2) ----
