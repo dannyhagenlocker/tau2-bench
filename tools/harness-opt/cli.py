@@ -141,6 +141,21 @@ def viewer(
 
 
 @app.command()
+def dashboard(
+    host: str = typer.Option("127.0.0.1", "--host"),
+    port: int = typer.Option(8770, "--port"),
+) -> None:
+    """Launch the v3 dashboard (FastAPI backend + SPA) at http://host:port."""
+    _run_path(
+        HARNESS_OPT_ROOT / "dashboard_v3" / "server.py",
+        "--host",
+        host,
+        "--port",
+        str(port),
+    )
+
+
+@app.command()
 def analyze(
     run: str = typer.Option(..., "--run"),
     baseline: str | None = typer.Option(None, "--baseline"),
