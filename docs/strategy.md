@@ -314,10 +314,15 @@ tools/harness-opt/
 │   ├── build_subset.py
 │   ├── eval_subset.py
 │   └── generate_report.py
-└── dashboard/             # Streamlit or similar
-    ├── app.py
-    └── components/        # heatmap, timeline, proposal review, ...
+└── dashboard_v3/          # SHIPPED UI: FastAPI backend + no-build ESM SPA
+    ├── server.py · data.py
+    └── client/            # pages: overview/clusters/embedding/traces/compare/proposals
 ```
+
+> **Note (current):** the shipped frontend is `dashboard_v3/` (FastAPI + vanilla-JS
+> SPA), documented in [phases/phase-1/dashboard.md](phases/phase-1/dashboard.md).
+> The `dashboard/` (Streamlit v1) and `dashboard_v2/` (static HTML) directories
+> are superseded. This tree is the original sketch.
 
 **Data flow:** Scripts write artifacts → dashboard reads artifacts → dashboard triggers scripts via subprocess/CLI.
 
@@ -459,7 +464,7 @@ Final
 ## Open questions (resolve during execution)
 
 - [ ] Exact oracle task ids after baseline (depends on flake distribution)
-- [ ] Streamlit vs FastAPI+React (default: **Streamlit** for speed)
+- [x] ~~Streamlit vs FastAPI+React~~ — **Resolved: FastAPI + no-build vanilla-JS SPA** (`dashboard_v3`)
 - [ ] Embedding model choice (local sentence-transformers vs API)
 - [ ] Custom agent name and registration path
 - [ ] Whether generation 2 fits in $50 after seeing gen 0 costs

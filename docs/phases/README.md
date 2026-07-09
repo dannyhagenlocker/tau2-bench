@@ -6,9 +6,9 @@ Phased implementation plan for `tools/harness-opt/`. Strategy context: [strategy
 
 | Phase | Status | Doc | Scope |
 |-------|--------|-----|-------|
-| **0** | **Implement now** | [phase-0/README.md](phase-0/README.md) | Scripts, contracts, CLI, tests |
-| **1** | Docs only | [phase-1/README.md](phase-1/README.md) | Streamlit dashboard MVP |
-| **2** | Docs only | [phase-2/README.md](phase-2/README.md) | Proposal pipeline + review |
+| **0** | Implemented | [phase-0/README.md](phase-0/README.md) · [clustering-engine.md](phase-0/clustering-engine.md) | Scripts, contracts, CLI, tests, clustering engine |
+| **1** | Implemented (v3) | [phase-1/dashboard.md](phase-1/dashboard.md) | Dashboard (FastAPI + SPA); [README](phase-1/README.md) = history |
+| **2** | Implemented (CLI + ReviewUI) | [phase-2/README.md](phase-2/README.md) | Proposal pipeline; ReviewUI = v3 Proposals page |
 | **3** | Docs only | [phase-3/README.md](phase-3/README.md) | Generations, stats, writeup |
 
 Contracts (all phases): [contracts/README.md](contracts/README.md)
@@ -27,7 +27,7 @@ flowchart TB
   end
 
   subgraph phase1 [Phase 1]
-    Dashboard[Streamlit dashboard]
+    Dashboard[Dashboard v3 - FastAPI + SPA]
   end
 
   subgraph phase2 [Phase 2]

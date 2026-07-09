@@ -22,7 +22,7 @@
     "failure_mode_summary": { "type": ["string", "null"] },
     "status": {
       "type": "string",
-      "enum": ["draft", "evaluated", "accepted", "rejected"]
+      "enum": ["draft", "evaluating", "evaluated", "accepted", "rejected"]
     },
     "lineage_id": { "type": ["string", "null"] },
     "coder_backend": { "type": ["string", "null"] },
