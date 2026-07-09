@@ -7,6 +7,7 @@ import { ClustersPage } from "./pages/clusters.js";
 import { TracesPage } from "./pages/traces.js";
 import { ComparePage } from "./pages/compare.js";
 import { EmbeddingPage } from "./pages/embedding.js";
+import { ProposalsPage } from "./pages/proposals.js";
 
 const NAV = [
   ["/overview", "Overview"],
@@ -14,6 +15,7 @@ const NAV = [
   ["/embedding", "Embedding"],
   ["/traces", "Traces"],
   ["/compare", "Compare runs"],
+  ["/proposals", "Proposals"],
 ];
 const PAGES = {
   "/overview": OverviewPage,
@@ -21,6 +23,7 @@ const PAGES = {
   "/embedding": EmbeddingPage,
   "/traces": TracesPage,
   "/compare": ComparePage,
+  "/proposals": ProposalsPage,
 };
 
 const root = document.getElementById("app");
