@@ -1,35 +1,36 @@
-# Phase 0 — Clustering Engine: Current State & Roadmap
+# Phase 0 — Clustering Engine: Current State
 
-> Living design note. Captures how the failure-clustering engine works today,
-> what is deliberately provisional, and the open question we most want to keep
-> alive: **moving from today's hand-authored, domain-specific decision tree
-> toward a more generalizable representation-and-distance approach.**
+> Living design note. Describes how the failure-clustering engine works **today**
+> and how we validated it. Read alongside the code — it points at functions
+> rather than repeating them (line numbers are intentionally omitted; they drift).
 >
-> Read this alongside the code — it points at functions and line ranges rather
-> than repeating them. Line numbers are accurate as of the P1–P4 work
-> (see [`docs/decision-log.md`](../../decision-log.md)).
+> **Status:** the original 4-layer "L0/L1/L2/L3 signature" plan (see
+> [`strategy.md`](../../strategy.md) and the 2026-07-08 "Clustering stack"
+> decision) has been **superseded**. The default engine is now
+> **embedding-based clustering over a text document, using neural (`st`)
+> embeddings, an auto-selected distance threshold, and a deterministic
+> *root-cause mechanism* as the primary axis.** The signature engine still
+> exists as a selectable, secondary strategy. History is in
+> [`docs/decision-log.md`](../../decision-log.md).
 
 ---
 
 ## 1. Pipeline overview (trace → cluster)
 
-`analyze` is an orchestrator that shells out to four scripts in sequence; each
-reads and writes typed JSON under `reports/<run>/` and never talks to the next
-stage except through those files.
-
-- Orchestration: `cli.py::analyze` (L125–146). Stage scripts are invoked as
-  subprocesses with `PYTHONPATH` set (`cli.py::_run_script`, L21–24).
-- Contracts for every artifact: `docs/phases/contracts/*.schema.json`, mirrored
-  as Pydantic models in `contracts/models.py`.
+`analyze` is an orchestrator that shells out to stage scripts in sequence; each
+reads and writes typed JSON under `reports/<run>/` and only talks to the next
+stage through those files (`cli.py::analyze`, `_run_script`). Contracts:
+`docs/phases/contracts/*.schema.json`, mirrored as Pydantic in
+`contracts/models.py`.
 
 ```
 data/simulations/<run>/results.json          raw tau2 trajectories (input)
         │  scripts/extract_features.py   → lib/trace_parser.py (+ lib/db_diff.py)
         ▼
 reports/<run>/features.json                   one SimulationFeatures record per sim
-        │  scripts/cluster.py            → lib/clustering.py
+        │  scripts/cluster.py            → lib/clustering.py | lib/embedding_cluster.py
         ▼
-reports/<run>/clusters_l0.json  +  clusters.json
+reports/<run>/clusters_l0.json  +  clusters.json   (clusters.json has method=embedding|signature)
         │  scripts/label_clusters.py
         ▼
 reports/<run>/cluster_labels.json
@@ -38,245 +39,222 @@ reports/<run>/cluster_labels.json
 reports/<run>/{manifest.json, task_summary.csv, analysis_summary.md}
 ```
 
-The important consequence: **after feature extraction, the clustering code never
-re-reads raw messages.** Everything downstream operates on the flat
-`SimulationFeatures` record. Any signal the clustering can use must first be
-materialized in Stage 1.
+The **label** stage (`scripts/label_clusters.py`) writes `cluster_labels.json`
+with a per-cluster `ClusterLabel` whose `summary` is a concise (1-2 sentence)
+LLM description of the shared root cause — read at a glance, and what the
+dashboard should render instead of deterministic gloss text. It aggregates the
+structured signals over *all* members (mechanism, top DB-diff signatures, failed
+NL assertions, tool chains, escalation rate) plus a few sampled final agent
+messages into one small LLM call; `--mock` produces a deterministic fallback.
+`summary` is an existing contract field (`cluster_labels.schema.json`) — no
+schema change.
+
+Auxiliary (evaluation / tuning, not part of `analyze`):
+
+- `scripts/compare_clusterings.py` (`cluster-compare`) — signature vs embedding
+  agreement (ARI / homogeneity) → `clusters_comparison.{json,md}`.
+- `scripts/sweep_clusterings.py` (`cluster-sweep`) — embedder × scope × algo ×
+  threshold sweep with silhouette → `clusters_sweep.{json,md}`.
+- `scripts/ablate_document.py` — scores document field-subsets × embedders
+  against hand labels → `eval/ablation.<run>.{json,md}`.
+
+Consequence unchanged: **after feature extraction the clustering never re-reads
+raw messages.** Every signal must be materialized in Stage 1.
 
 ---
 
 ## 2. Signal extraction (what each trace becomes)
 
-`extract_features.py::run_extract` (L29+) loads `Results`, and for the retail
-domain also loads the task set + a base `RetailDB` once
-(`_load_retail_context`, L18–27) so the P1 replay does not re-parse the 2.7 MB
-DB per simulation. Each simulation is reduced to one `SimulationFeatures` object
-by `trace_parser.py::extract_simulation_features` (L267+).
+`trace_parser.py::extract_simulation_features` reduces each sim to one
+`SimulationFeatures`. For retail, `extract_features.py::_load_retail_context`
+loads the task set + a base `RetailDB` once so the P1 replay doesn't re-parse the
+2.7 MB DB per sim.
 
 | Signal | Field(s) | Produced by | Notes |
 |--------|----------|-------------|-------|
-| Failure taxonomy (P0) | `failure_type` | `classify_failure` (L63–88), `_component_failed` (L41–61) | Retail gates on `DB` + `NL_ASSERTION`; buckets: `pass` / `db_only` / `nl_only` / `mixed` / `communicate_only` / `termination` |
-| Reward components | `db_reward`, `nl_reward`, `communicate_reward` | `_reward_components` (L91+) | Straight from `reward_breakdown` |
-| Raw tool calls | `tool_sequence` | `extract_tool_sequence` (L111+) | Names + turn + error flag, args dropped |
-| Normalized chain (P2) | `normalized_tool_chain`, `write_tool_sequence` | `normalize_tool_chain` (L205+), `extract_write_sequence` (L214+) | Consecutive dupes collapsed; write set from `break_down_metrics.get_write_tools` |
-| DB divergence (P1) | `db_diff_signature`, `db_diff_kinds`, `db_diff_entities` | `db_diff.py::compute_db_diff` (L163+) | Offline gold/predicted replay; only for `db_only`/`mixed` |
-| NL divergence (P3) | `nl_failure_signature`, `nl_failed_assertions` | `build_nl_signature` (L192+), `denoise_nl` (L186+) | Denoised text of *failed* assertions only |
-| Policy heuristics | `policy_flags` | `compute_policy_flags` (L147+) | `auth_before_mutate`, `confirm_before_write`, `single_tool_per_turn`, `num_env_errors` |
-| Human/LLM text | `embedding_text` | `build_embedding_text` (L226+) | **Not consumed by clustering today** — only by the labeler |
+| **Mechanism (PRIMARY axis)** | `mechanism_class` | `classify_mechanism` | Deterministic root cause; see §4. ~91% vs hand labels |
+| Reward-basis taxonomy (secondary) | `failure_type` | `classify_failure` | `pass`/`db_only`/`nl_only`/`mixed`/`communicate_only`/`termination`; retail gates `DB`+`NL_ASSERTION` |
+| Reward components | `db_reward`, `nl_reward`, `communicate_reward` | `_reward_components` | From `reward_breakdown` |
+| Tool calls | `tool_sequence` | `extract_tool_sequence` | Names + turn + error flag; args dropped |
+| Normalized chain | `normalized_tool_chain`, `write_tool_sequence` | `normalize_tool_chain`, `extract_write_sequence` | Consecutive dupes collapsed |
+| DB divergence | `db_diff_signature`, `db_diff_kinds`, `db_diff_entities` | `db_diff.py::compute_db_diff` | Offline gold/predicted replay; `missed`/`wrong`/`extra`; only for `db_only`/`mixed` |
+| NL divergence | `nl_failure_signature`, `nl_failed_assertions` | `build_nl_signature`, `denoise_nl` | Denoised text of *failed* assertions only |
+| Escalation | `escalated_to_human` | in `extract_simulation_features` | `transfer_to_human_agents` called |
+| Last agent message | `last_agent_message` | `extract_last_agent_message` | JSON-unwrapped, denoised, capped — **the key embedding signal** |
+| Tool errors | `tool_error_messages` | `extract_tool_errors` | Denoised, deduped |
+| Policy heuristics | `policy_flags` | `compute_policy_flags` | `auth_before_mutate`, `confirm_before_write`, `single_tool_per_turn`, `num_env_errors` |
+| Legacy summary | `embedding_text` | `build_embedding_text` | Used by the labeler only |
 
-### The P1 DB-diff signature in one paragraph
+### DB-diff signature in one paragraph
 
 `compute_db_diff` reconstructs three DB states on fresh retail envs — `initial`
-(post-task-init), `gold` (initial + the task's reference actions), and
-`predicted` (initial + the agent's trajectory) — then `diff_dbs` (L137+) walks
-gold vs predicted, classifying each divergent leaf relative to `initial` as
-`missed` / `wrong` / `extra` (`_classify`, L83–91) and abstracting concrete
-paths (record IDs → `*`, list indices → `[]`) via `_abstract` (L124–134). The
-result is a value-free string like
+(post-init), `gold` (initial + the task's reference actions), `predicted`
+(initial + the agent's trajectory) — then `diff_dbs` classifies each divergent
+leaf relative to `initial` as `missed` / `wrong` / `extra` and abstracts paths
+(record IDs → `*`, list indices → `[]`). Result e.g.
 `missed:orders.*.return_items;wrong:orders.*.cancel_reason`.
 
 ---
 
-## 3. The clustering algorithm (today = a decision tree)
+## 3. The clustering algorithm (default = embedding)
 
-`cluster.py::run_cluster` calls two functions in `lib/clustering.py`.
+`cluster.py::run_cluster` always writes `clusters_l0.json` (deterministic
+taxonomy) and `clusters.json` (final). `--method` selects the engine.
 
-### Layer 0 — deterministic taxonomy partition
+### Default: embedding engine (`lib/embedding_cluster.py::cluster_embeddings`)
 
-`cluster_l0` (L107–139) partitions **all** sims (passes included) by the string
-`f"{failure_type}:{termination_reason}"`. Pure dict bucketing, no ML, fully
-reproducible. On `baseline-gpt55-t2`: `pass` (192), `db_only:user_stop` (26),
-`mixed:user_stop` (5), `nl_only:user_stop` (5). This layer's only job is to make
-sure the finer layer never merges across failure types.
+1. **Document** — `build_cluster_document(sim, fields=...)` turns each failing
+   trace into a text document: a **core spine** (failure type, tool chain,
+   write chain, DB-diff tokens, entities, flags) always present, plus optional
+   `WHY_FIELDS` (`nl`, `escalation`, `last_message`, `tool_errors`, `mechanism`).
+   The ablation-validated default is **core + `last_message`**.
+2. **Embed** — a pluggable `Embedder`. Default **`st`** = neural
+   all-MiniLM-L6-v2. On this torch-less / offline box it runs via a pure-NumPy
+   forward pass over the HF-cached weights (`lib/minilm_numpy.py`); if a real
+   `sentence-transformers` install exists it uses that. Offline fallbacks:
+   `tfidf`, `char`, `lsa` (sklearn-only). If `st` is unavailable it degrades to
+   `tfidf`.
+3. **Cluster** — agglomerative, cosine, average linkage, **auto-selected
+   distance threshold**: scan a loose→tight ladder and take the loosest
+   threshold whose largest cluster's share ≤ `max_cluster_share` (default
+   **0.45**); `_auto_select_labels`. A fixed threshold is available (positive
+   `--distance-threshold`); `--algo hdbscan` is also selectable.
+   Default `--scope global` (cluster all failures together); `l0` scopes within
+   each mechanism bucket.
+4. **Materialize** — each group becomes a `Cluster`, named
+   `"<dominant_mechanism> | <dominant_signature>"`, carrying `mechanism`,
+   `signature`, `failure_type`, `failure_rate`, flag summary.
 
-### Final layer — signature grouping + guarded similarity split
+Membership is embedding-driven — **no decision tree decides which cluster a
+trace joins.** The document is still ~80% rule-derived signals; `last_message`
+is the one free-text field, which is why neural embeddings help.
 
-`cluster_l1_l2` (L142–196):
+### Secondary: signature engine (`lib/clustering.py::cluster_l1_l2`)
 
-1. Drop passes; map each failing sim to its L0 parent (L149–158).
-2. Group by the tuple **`(l0_parent_id, primary_signature)`** (L160–163).
-3. Optionally split large groups (`_refine_group`, L38–75).
-4. Emit `Cluster` objects, ID by size rank, then re-sort by
-   `(-failure_rate, -count, id)` (L170–196).
+The original hand-authored decision tree, kept as `--method signature`: group by
+`(l0_parent, _primary_signature)` where the signature is the DB-diff signature
+(db failures) / denoised NL signature (nl failures) / write-chain (else), with a
+guarded agglomerative refine on large groups. Exact-match keys, over-splits
+(20 clusters / 60% singletons on the baseline vs embedding's 6 / 1).
 
-The routing that decides a trace's signature is `_primary_signature` (L19–35).
-Rendered as the decision tree it literally is:
+### L0 taxonomy — now mechanism-based
+
+`cluster_l0` buckets all sims by `mechanism_class` (`pass` for non-failures) — no
+longer by `failure_type`. This is the primary reporting axis.
+
+---
+
+## 4. Primary axis: root-cause mechanism
+
+`classify_mechanism` (`trace_parser.py`) deterministically assigns each failure a
+cause from the extracted signals. Precedence encodes what drove the failure:
 
 ```
-                        ┌─ failure_type == pass ──────────────► excluded (not clustered)
-trace ─ failure_type ───┤
-                        ├─ db_only  ─► key = "db=<db_diff_signature>"
-                        ├─ nl_only  ─► key = "nl=<nl_failure_signature>"
-                        ├─ mixed    ─► key = "db=<...> | nl=<...>"   (both, strict)
-                        └─ else     ─► key = "chain=<write_tool_sequence or normalized_chain>"
-                                        (termination / communicate_only)
-
-group  = (L0 parent, key)               # exact-string match → same group
-refine = if len(group) >= 6:            # TF-IDF(normalized_chain) + agglomerative,
-             cosine distance_threshold=0.5   #   n_clusters=None (threshold, not k)
-         else: keep as one cluster
+pass/termination → pass / premature_termination
+nl_only/comm_only → bailed_transfer (if escalated) else comm_miss
+db-gated & no writes → identification_failure (not-found + escalated)
+                      / bailed_transfer (escalated) / stalled_no_action
+db-gated & wrote     → bailed_transfer (escalated)
+                      / wrong_params (diff has wrong|extra)
+                      / incomplete_multitask (diff has missed) / other
 ```
 
-Two mechanics worth remembering:
+Classes: `bailed_transfer`, `wrong_params`, `incomplete_multitask`,
+`stalled_no_action`, `identification_failure`, `comm_miss`,
+`premature_termination`, `other`.
 
-- The refinement path is **guarded and rarely fires today** — the biggest
-  signature group on the baseline is n=6, and its chains are similar enough not
-  to split. So current final clusters are effectively *pure signature groups*.
-- `_refine_group` degrades gracefully: missing sklearn, trivial vocabulary, or
-  any exception returns the group unsplit (L50–70).
+**Why this replaced `db_only/nl_only/mixed`:** the symptom axis is scorer-exact
+but cross-cuts real causes — the dominant `bailed_transfer` cause was scattered
+across all three symptom buckets, and `mixed` was largely an artifact of task
+composition (DB+NL both fail because the agent did nothing on a task that
+happens to have NL assertions). `failure_type` is retained as a secondary
+"where reward was lost" attribute; `mechanism_class` is the actionable axis used
+for L0 buckets and cluster names.
 
-`assign_cluster_to_simulations` (L199–211) inverts cluster→sims into a
-sim→cluster_id map (passes → `"pass"`) for `task_summary.csv`.
+**Validity:** deterministic, and **91% (33/36)** agreement with hand-labeled
+root causes on `baseline-gpt55-t2` (perfect on the two dominant classes,
+`wrong_params` 15/15 and `bailed_transfer` 13/13). It's a heuristic — appropriate
+for a *taxonomy/naming* axis (clustering membership stays embedding-driven) — and
+should be re-validated as labeled data grows. The 3 residual misses (an
+incomplete-with-a-wrong-value; a refusal reading as comm-miss) are accepted.
 
----
-
-## 4. Why this is "bucketed" — the core limitation
-
-Everything above is a **symbolic, hand-authored decision tree** whose leaves are
-exact-match string keys. It works well right now (28→20 clusters, 79%→60%
-singletons) precisely *because* we injected a lot of retail domain knowledge:
-
-- **Retail DB schema** drives ID-vs-field abstraction — `db_diff.py::retail_field_names`
-  (L31–66) introspects `RetailDB`; `_abstract` (L124) keys off it.
-- **Retail write-tool set** defines `write_tool_sequence` (`get_write_tools("retail")`).
-- **Retail reward basis** (`DB` + `NL_ASSERTION`) is hard-coded into the taxonomy.
-- **NL denoise regex** (`_NL_NOISE`, `trace_parser.py` L183) is tuned to strip
-  `$amounts` / `#W...` IDs / quantities.
-
-This yields interpretable clusters but has structural weaknesses:
-
-1. **Exact-match, no notion of distance.** Two DB signatures that differ by a
-   single path do not merge (e.g. the two `orders.*.address.*` clusters — one
-   includes `country`, one does not). There is no "these mechanisms are 90%
-   similar" — it is identical-or-not.
-2. **`mixed` is maximally strict.** Concatenating db + nl signatures means a
-   mixed failure only merges with another that diverged identically on *both*
-   axes; realistically most mixed sims become singletons.
-3. **Does not generalize across domains.** Point it at airline/telecom and the
-   field-name introspection still works, but the taxonomy assumptions, write-tool
-   semantics, and NL denoise heuristics would need re-authoring.
-4. **Brittle to schema/policy drift.** New order fields or a changed reward basis
-   silently change signatures.
-5. **Singleton ambiguity.** A 60% singleton rate mixes *genuinely unique*
-   mechanisms with *under-clustered near-duplicates*, and today we can't tell
-   them apart without eyeballing (hence Phase 1).
-
-**We explicitly want to keep the door open to replacing the leaves (and possibly
-the whole tree) with a representation + distance + density-based approach** — see
-§6. The taxonomy (L0) is worth keeping as a hard constraint or a feature; the
-brittle part is the exact-match signature leaves.
+Ground truth: `tools/harness-opt/eval/root_cause_labels.baseline-gpt55-t2.json`.
 
 ---
 
-## 5. Known issues & short-term Phase 0 tweaks
+## 5. How we chose the defaults (evaluation)
 
-These are concrete, mostly-local fixes to revisit *after* Phase 1 gives us a
-way to see their effect.
+All three defaults were tuned against the hand labels, not by taste.
 
-- **`failure_rate` is always 1.0 in final clusters.** `_failure_rate_for_tasks`
-  (L93–104) computes each task's pass fraction over the sims *in the cluster*,
-  but final clusters contain only failures (passes filtered at L149). So the
-  numerator is always 0 → rate 1.0 everywhere. It is meaningful only in L0.
-  True per-task flakiness (trial 0 passes, trial 1 fails) needs the pass sims and
-  is exactly the P5 signal — fixing this is a prerequisite for flaky-task work.
-- **Stale naming.** Module docstring (`clustering.py` L1) and the "L1/L2"
-  vocabulary predate P4; the real structure is L0-taxonomy → signature-group →
-  threshold-split. Rename to reduce confusion.
-- **`embedding_text` is computed but unused by clustering** (only the labeler
-  reads it). Either wire it in or stop implying it drives clustering.
-- **Refinement is untuned.** `min_size=6` and `distance_threshold=0.5`
-  (`_refine_group` L41–42) are guesses; no run has stress-tested them.
-- **P1 replay caveats.** Half-duplex only (uses `simulation.get_messages()`);
-  failures are swallowed and return `None` (L205–206) → sim silently falls back
-  to `db=unknown` and can over-merge. Consider surfacing replay-failure as its
-  own signal.
-- **Cross-tab confidence.** `analysis_summary.md` reports singleton %, but we
-  lack an automated cluster-cohesion metric.
+- **Embedder + document (`ablate_document.py`).** Scored document field-subsets ×
+  embedders by ARI/V-measure vs the 36 labels. Winner: **`st` + core+last_message**
+  — ARI **0.697**, V-measure 0.769, and it recovers exactly the **6** root-cause
+  classes (vs tfidf 0.467, char 0.29, and the signature engine 0.20). Neural
+  embeddings unlock the free-text signals (marginal V-measure: `last_message`
+  +0.33, `nl` +0.10, `escalation` +0.08); bag-of-words got ~0 from them. Adding
+  `mechanism` to the document did **not** beat core+last_message, so it stays a
+  labeling axis only.
+- **Auto-threshold cap (0.45).** A fixed threshold didn't transfer across runs
+  (a weak model collapsed 74% of failures into one blob at 0.3). The share-cap
+  ladder with cap **0.45** was tuned on the labeled run: it reproduces the
+  ARI-optimal 6-cluster result there *and* fixes the weak-model run (74% blob →
+  30 clusters, 22% largest). See §6.
+- **Metric note.** ARI is the target (rewards correct grouping, penalizes
+  over-splitting); V-measure's homogeneity term rewards pure-but-fragmented
+  clusterings, so we don't optimize it alone. Thresholds are tuned against the
+  same labels (no held-out split, N=36), so absolute numbers are optimistic —
+  the *ranking* (`st` ≫ tfidf ≫ signature) is the trustworthy result.
 
 ---
 
-## 6. Open direction — a less-bucketed, generalizable engine
+## 6. Cross-run generalization
 
-The goal is to preserve interpretability while removing the exact-match brittleness
-and the domain-specific authoring. Sketch of the target shape:
+Run on all `data/simulations/` runs with the default engine:
 
-### 6.1 Representation (embed each trace)
-Move each `SimulationFeatures` record to a vector (or a set of typed sub-vectors)
-so we can measure *distance* between failures:
+| Run | Model | Failures | Clusters | Largest | Note |
+|-----|-------|----------|----------|---------|------|
+| `baseline-gpt55-t2` | gpt-5.5 | 36 | 6 | 41% | tuning run (ARI 0.70) |
+| `baseline-gpt55-t2XXXXXXXX` | gpt-5.5 | 32 | 10 | 34% | near-dup; transfers |
+| `baseline-gpt54mini-t2` | gpt-5.4-mini | 167 | 30 | 22% | blob avoided by auto-threshold |
+| `ccand-gpt54mini-t2` | gpt-5.4-mini | ~119 | 16 | 42% | candidate run |
 
-- **Structured-signal features** — one-hot / multi-hot over abstracted DB-diff
-  paths × kind (`missed`/`wrong`/`extra`), policy flags, failure type. Cheap,
-  interpretable, already 90% available from P1/P2/P3 outputs.
-- **Tool-chain sequence** — n-gram TF-IDF over `normalized_tool_chain` (already
-  used inside `_refine_group`), or a learned sequence embedding.
-- **Text / LLM embeddings** — embed a natural-language trace summary or the
-  existing `embedding_text` with a sentence/LLM embedder. This is the most
-  domain-agnostic option and the clearest "leave the door open" lever.
-- **DB-diff as a vector** — bag-of-abstracted-paths so two signatures differing
-  by one path are *close* rather than disjoint (directly fixes the address-cluster
-  split in §4.1).
-
-### 6.2 Distance & fusion
-Combine sub-vector distances (e.g. weighted cosine over structured + chain +
-text). Fusion weights become the tunable knob instead of hand-authored keys.
-
-### 6.3 Clustering method (no fixed k)
-- **HDBSCAN** — density-based, no `k`, and it labels true outliers as noise —
-  which is exactly the right model for "genuinely unique mechanism vs
-  under-clustered near-duplicate."
-- **Agglomerative with a distance threshold** — already prototyped in
-  `_refine_group`; generalize it from "refine large buckets" to "cluster the
-  whole L0 partition."
-- **Graph community detection** on a kNN similarity graph — interpretable,
-  handles varying densities.
-
-### 6.4 Keep interpretability
-Even with embedding-based clustering, keep the P1/P3 signatures as **cluster
-metadata/labels** (most common signature per cluster), so a human still reads
-"this cluster ≈ wrong cancel_reason." The symbolic signatures become descriptors,
-not the partition function.
-
-### 6.5 Migration path (low-risk)
-- Put the current logic behind a strategy interface: `cluster_failures(features,
-  strategy=...)` where `strategy ∈ {signature (today), embedding, hybrid}`.
-- `_primary_signature` + `_refine_group` become the `signature` strategy.
-- Keep L0 taxonomy as a hard pre-partition (or feed `failure_type` in as a
-  feature) so we never merge a DB failure with an NL failure regardless of
-  strategy.
-- Gate the switch on measured cohesion + the Phase 1 visual review, not vibes.
-
-### 6.6 Evaluation (what "better" means)
-We currently have no ground-truth partition. Options: intra/inter-cluster cohesion
-(silhouette on the chosen distance), stability under resampling/trials, and
-human agreement via the Phase 1 gallery. Phase 1 is the enabler — we cannot
-responsibly tune §6 without being able to *look* at the clusters.
+Two honest findings: (1) the **method** generalizes (same-regime runs need no
+retuning), but a **fixed threshold does not** — hence auto-threshold. (2) The
+weak model's failures are intrinsically fuzzier (silhouette ~0.18 at any
+threshold vs ~0.4 for gpt-5.5); auto-threshold prevents the blob but can't
+manufacture clean separation. The mechanism L0 makes this legible: `gpt54mini`
+is **66% `stalled_no_action`** — a single harness-fixable story the symptom axis
+would have hidden inside `db_only`.
 
 ---
 
-## 7. What Phase 1 must expose to unblock Phase 0 tuning
+## 7. Known issues & remaining work
 
-Concrete asks from the dashboard so we can judge and iterate on clustering:
-
-- **Cluster gallery**: for each cluster, list member sims with their
-  `signature`, `db_diff_signature`, `nl_failure_signature`, `normalized_tool_chain`,
-  `policy_flags`, reward components.
-- **Side-by-side trace diff**: compare two traces (esp. across singletons) to
-  answer "why didn't these merge?" — ideally show the signature delta.
-- **Cluster × actual-reward cross-tab**: confirm the taxonomy is faithful.
-- **Singleton inspector**: surface all singletons and their nearest neighbor by
-  signature/chain similarity, to estimate how many are truly unique vs
-  under-clustered.
-- **(Forward-looking)** a trace-distance heatmap once §6 embeddings exist.
-
-See [`../phase-1/README.md`](../phase-1/README.md) for the page/agent breakdown;
-the TraceExplorer + ClusterGallery + RunComparison pages cover most of the above.
+- **`failure_rate` is ~1.0 in final clusters.** `_failure_rate_for_tasks`
+  computes each task's pass fraction over sims *in the cluster*, but final
+  clusters contain only failures → rate ≈ 1.0. Meaningful only in L0. True
+  per-task flakiness (trial 0 passes, trial 1 fails) needs the pass sims — the
+  P5 signal.
+- **Thresholds/cap tuned on one labeled run (N=36).** Re-validate as more
+  labels/runs arrive; the cap is robust across caps 0.35–0.6 on the weak run but
+  the labeled run is the only ground truth.
+- **`st` requires a cached MiniLM (or torch).** Present on this box; elsewhere it
+  falls back to `tfidf` (auto-threshold still applies) with a printed warning.
+- **Mechanism is heuristic (91%).** The rare classes (`identification_failure`,
+  `comm_miss`, `wrong_decision_refused`) are fuzzy; the two dominant ones are
+  exact.
+- **Legacy naming.** `clustering.py`'s "L1/L2" vocabulary predates the current
+  structure; the signature engine is legacy-but-supported.
 
 ---
 
 ## 8. Pointers
 
-- Engine code: `tools/harness-opt/lib/{clustering,trace_parser,db_diff}.py`
+- Engine code: `tools/harness-opt/lib/{embedding_cluster,minilm_numpy,clustering,trace_parser,db_diff}.py`
 - Stage scripts: `tools/harness-opt/scripts/{extract_features,cluster,label_clusters,generate_report}.py`
+- Eval/tuning: `tools/harness-opt/scripts/{ablate_document,compare_clusterings,sweep_clusterings}.py`; artifacts in `tools/harness-opt/eval/`
 - Contracts: `docs/phases/contracts/{features,clusters}.schema.json`
+- Ground-truth labels: `tools/harness-opt/eval/root_cause_labels.*.json`
 - History & rationale: `docs/decision-log.md`, `docs/strategy.md`
-- Latest baseline artifacts: `reports/baseline-gpt55-t2/`
+- Latest artifacts: `reports/<run>/`
+```

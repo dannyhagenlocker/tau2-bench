@@ -74,6 +74,7 @@ def run_report(
                 "db_reward": sim.db_reward,
                 "nl_reward": sim.nl_reward,
                 "communicate_reward": sim.communicate_reward,
+                "mechanism_class": sim.mechanism_class,
                 "failure_type": sim.failure_type.value,
                 "termination_reason": sim.termination_reason,
                 "db_diff_signature": sim.db_diff_signature,

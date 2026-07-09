@@ -17,13 +17,20 @@ Script-first pipeline from `data/simulations/<run>/` → `reports/<run>/` with t
 | Command | Script | Output |
 |---------|--------|--------|
 | `harness-opt extract --run NAME` | `extract_features.py` | `features.json` |
-| `harness-opt cluster --run NAME` | `cluster.py` | `clusters_l0.json`, `clusters.json` |
+| `harness-opt cluster --run NAME [--method embedding\|signature]` | `cluster.py` | `clusters_l0.json`, `clusters.json` |
 | `harness-opt label --run NAME [--mock]` | `label_clusters.py` | `cluster_labels.json` |
 | `harness-opt report --run NAME [--baseline NAME]` | `generate_report.py` | `manifest.json`, `task_summary.csv`, `analysis_summary.md` |
-| `harness-opt analyze --run NAME [--baseline NAME] [--mock-label]` | orchestrates all above | full report dir |
+| `harness-opt analyze --run NAME [--baseline NAME] [--method ...] [--mock-label]` | orchestrates all above | full report dir |
+| `harness-opt cluster-compare --run NAME` | `compare_clusterings.py` | `clusters_comparison.{json,md}` |
+| `harness-opt cluster-sweep --run NAME` | `sweep_clusterings.py` | `clusters_sweep.{json,md}` |
 | `harness-opt build-subset --run NAME --mode oracle` | `build_subset.py` | `oracle.json` |
 | `harness-opt build-subset --run NAME --mode cluster --cluster ID` | `build_subset.py` | `proposals/<id>/subset_spec.json` |
 | `harness-opt eval-subset --run NAME --proposal ID [--baseline NAME]` | `eval_subset.py` | `subset_results.json` |
+
+Default clustering is the **embedding engine** (`--method embedding`: neural `st`
+document embeddings, auto-selected threshold, root-cause mechanism as the primary
+axis). `--method signature` is the legacy exact-match engine. See
+[`clustering-engine.md`](clustering-engine.md).
 
 Entry point: `uv run python tools/harness-opt/cli.py <command>`
 
@@ -44,22 +51,34 @@ Entry point: `uv run python tools/harness-opt/cli.py <command>`
 
 ### P0-Cluster
 
-- **Owns:** `lib/clustering.py`, `scripts/cluster.py`, `lib/db_diff.py`
+- **Owns:** `lib/embedding_cluster.py`, `lib/clustering.py`, `lib/minilm_numpy.py`,
+  `lib/db_diff.py`, `scripts/cluster.py`
 - **Input:** `features.json`
-- **Output:** `clusters_l0.json` (layer=l0), `clusters.json` (layer=final)
-- **Algorithm (current):** L0 by failure_type+termination; final by mechanism
-  signature — DB-diff signature (P1) / denoised NL signature (P3) / write-tool
-  chain — then a guarded agglomerative split (cosine distance threshold) on large
-  same-signature groups. See [`clustering-engine.md`](clustering-engine.md).
-- **Acceptance:** Clusters ranked by failure_rate; mixed failures separate bucket
+- **Output:** `clusters_l0.json` (layer=l0, bucketed by mechanism),
+  `clusters.json` (layer=final, `method=embedding|signature`)
+- **Algorithm (current, default `embedding`):** each failing trace → text
+  document (core spine + denoised `last_message`) → neural `st` embedding
+  (offline MiniLM) → agglomerative cosine clustering with an **auto-selected
+  distance threshold** (largest-cluster-share cap 0.45). Clusters are named and
+  L0-bucketed by a deterministic **root-cause mechanism** (`classify_mechanism`);
+  `failure_type` (db/nl/mixed) is a secondary attribute. `--method signature` is
+  the legacy exact-match engine. See [`clustering-engine.md`](clustering-engine.md).
+- **Acceptance:** Clusters ranked by failure_rate; deterministic L0; embedding
+  membership is not rule-decided
 
 ### P0-Label
 
 - **Owns:** `scripts/label_clusters.py`
 - **Input:** `clusters.json`, `features.json`
 - **Output:** `cluster_labels.json`
-- **Rules:** 2-3 representatives per cluster; `--mock` for tests (no API)
-- **Acceptance:** One label per cluster; cohesion 1-5
+- **Rules:** For each cluster, aggregate structured signals over **all** members
+  (dominant mechanism, top DB-diff signatures, failed NL assertions, common tool
+  chains, escalation rate) + sample ~4 deduped final agent messages → one LLM
+  call → concise `summary` (1-2 sentences), `display_name`, `cohesion`,
+  `blame_tags`. `--mock` yields a deterministic summary (tests/no-API).
+- **Acceptance:** One label per cluster; `summary` is a readable 1-2 sentence
+  root-cause description; cohesion 1-5. The dashboard shows `summary` (replaces
+  deterministic gloss text).
 
 ### P0-Subset
 
@@ -84,7 +103,8 @@ Entry point: `uv run python tools/harness-opt/cli.py <command>`
 | `db_reward` | float | DB component |
 | `nl_reward` | float | NL_ASSERTION component |
 | `communicate_reward` | float | COMMUNICATE component (diagnostic; non-gating in retail) |
-| `failure_type` | str | pass / db_only / nl_only / mixed / communicate_only / termination |
+| `mechanism_class` | str | **Primary axis** — root cause: bailed_transfer / wrong_params / incomplete_multitask / stalled_no_action / identification_failure / comm_miss / premature_termination / other |
+| `failure_type` | str | Secondary — reward basis: pass / db_only / nl_only / mixed / communicate_only / termination |
 | `termination_reason` | str | From SimulationRun |
 | `db_diff_signature` | str | P1 abstracted DB divergence (db/mixed failures) |
 | `nl_failure_signature` | str | P3 denoised failed-assertion signature (nl/mixed failures) |

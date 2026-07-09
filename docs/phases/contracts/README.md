@@ -17,7 +17,7 @@ This directory is the **source of truth** for inter-stage I/O. Python implementa
 |------|--------|----------|-----------|
 | `manifest.json` | [manifest.schema.json](manifest.schema.json) | `generate_report` | All stages, dashboard |
 | `features.json` | [features.schema.json](features.schema.json) | `extract_features` | `cluster`, dashboard |
-| `clusters_l0.json` | [clusters.schema.json](clusters.schema.json) | `cluster` | `cluster` L2, dashboard |
+| `clusters_l0.json` | [clusters.schema.json](clusters.schema.json) | `cluster` | dashboard (deterministic mechanism-bucket taxonomy) |
 | `clusters.json` | [clusters.schema.json](clusters.schema.json) | `cluster` | `label_clusters`, `build_subset`, dashboard |
 | `cluster_labels.json` | [cluster_labels.schema.json](cluster_labels.schema.json) | `label_clusters` | Dashboard, proposal agent |
 | `task_summary.csv` | (columns in phase-0 README) | `generate_report` | `build_subset`, dashboard |
