@@ -25,6 +25,13 @@ CLIENT_DIR = Path(__file__).parent / "client"
 def create_app() -> FastAPI:
     app = FastAPI(title="harness-opt dashboard v3")
 
+    @app.middleware("http")
+    async def _no_cache(request, call_next):
+        # Dev tool: never let the browser serve stale JS/CSS modules or API data.
+        response = await call_next(request)
+        response.headers["Cache-Control"] = "no-store"
+        return response
+
     @app.get("/api/runs")
     def api_runs():
         return data.list_runs()

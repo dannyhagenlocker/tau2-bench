@@ -1,5 +1,20 @@
 import { h } from "../dom.js";
 
+// Failure-mode palette (mirrors .ftype.* in styles.css): DB=blue, NL=amber,
+// mixed=red, pass=green, communicate=violet, termination=slate.
+const FTYPE_COLOR = {
+  pass: "#16a34a",
+  db_only: "#2563eb",
+  nl_only: "#d97706",
+  mixed: "#dc2626",
+  communicate_only: "#7c3aed",
+  termination: "#64748b",
+};
+
+export function ftypeColor(t) {
+  return FTYPE_COLOR[t] || "#64748b";
+}
+
 export function ftype(t) {
   return h("span", { class: "ftype " + t }, t);
 }
