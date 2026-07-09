@@ -16,12 +16,18 @@ bootstrap()
 app = typer.Typer(help="Harness optimization tooling for tau2-bench retail domain")
 HARNESS_OPT_ROOT = Path(__file__).resolve().parent
 SCRIPTS = HARNESS_OPT_ROOT / "scripts"
+DASHBOARD_V2 = HARNESS_OPT_ROOT / "dashboard_v2"
+
+
+def _run_path(script_path: Path, *args: str, check: bool = True) -> int:
+    cmd = [sys.executable, str(script_path), *args]
+    env = {**os.environ, "PYTHONPATH": str(HARNESS_OPT_ROOT)}
+    proc = subprocess.run(cmd, cwd=str(HARNESS_OPT_ROOT), check=check, env=env)
+    return proc.returncode
 
 
 def _run_script(script: str, *args: str) -> None:
-    cmd = [sys.executable, str(SCRIPTS / script), *args]
-    env = {**os.environ, "PYTHONPATH": str(HARNESS_OPT_ROOT)}
-    subprocess.run(cmd, cwd=str(HARNESS_OPT_ROOT), check=True, env=env)
+    _run_path(SCRIPTS / script, *args)
 
 
 @app.command()
@@ -123,13 +129,25 @@ def eval_subset(
 
 
 @app.command()
+def viewer(
+    run: str = typer.Option(..., "--run"),
+    overwrite: bool = typer.Option(False, "--overwrite"),
+) -> None:
+    """Generate the v2 static HTML trace viewer (reports/<run>/trace_viewer.html)."""
+    args = ["--run", run]
+    if overwrite:
+        args.append("--overwrite")
+    _run_path(DASHBOARD_V2 / "generate.py", *args)
+
+
+@app.command()
 def analyze(
     run: str = typer.Option(..., "--run"),
     baseline: str | None = typer.Option(None, "--baseline"),
     mock_label: bool = typer.Option(False, "--mock-label"),
     overwrite: bool = typer.Option(False, "--overwrite"),
 ) -> None:
-    """Full pipeline: extract → cluster → label → report."""
+    """Full pipeline: extract → cluster → label → report → viewer."""
     ow = ["--overwrite"] if overwrite else []
     _run_script("extract_features.py", "--run", run, *ow)
     _run_script("cluster.py", "--run", run, *ow)
@@ -143,6 +161,11 @@ def analyze(
     if overwrite:
         report_args.append("--overwrite")
     _run_script("generate_report.py", *report_args)
+    # Best-effort: the static viewer is a convenience artifact; don't fail the
+    # whole pipeline if it can't be generated.
+    code = _run_path(DASHBOARD_V2 / "generate.py", "--run", run, *ow, check=False)
+    if code != 0:
+        typer.echo("Warning: trace_viewer.html generation failed (non-fatal).")
     typer.echo(f"Analysis complete: reports/{run}/")
 
 
