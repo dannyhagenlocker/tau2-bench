@@ -115,37 +115,41 @@ artifacts into a "what failed → propose → review → accept" workflow in the
 **Overview** — headline metrics and the root-cause mechanism breakdown
 (`baseline-gpt55-t2`: 84.2% pass, 36 failures, `bailed_transfer` = 13).
 
-Dashboard overview: 228 sims, 84.2% pass, root-cause mechanism bars, top failure clusters
+![](/docs/assets/dashboard/01-overview.png)
+*Dashboard overview: 228 sims, 84.2% pass, root-cause mechanism bars, top failure clusters*
 
 **Clusters** — drill into a mode. `c_000` shows its mechanism composition (13
 `bailed_transfer` + 2 `identification_failure`) and every member's tool chain; the
 `… → transfer_to_human_agents` tails make the premature-transfer pattern obvious.
 
-Clusters page: c_000 detail with mechanism composition and per-trace tool chains
+![](/docs/assets/dashboard/02-clusters.png)
+*Clusters page: c_000 detail with mechanism composition and per-trace tool chains*
 
 **Embedding** — the geometry behind the clustering in step 2: a centroid map (bubble = cluster, size =
 #sims), a per-sim scatter, and a centroid-cosine heatmap for spotting mergeable
 clusters.
 
-Embedding page: centroid map, sim scatter, and cluster-similarity heatmap
+![](/docs/assets/dashboard/03-embedding.png)
+*Embedding page: centroid map, sim scatter, and cluster-similarity heatmap*
 
 **Traces** — a swimlane timeline of two trajectories side by side (per-turn latency
 and cost) and a message-level diff. I read the C1 evidence here: the agent transfers
 instead of answering.
 
-Traces: side-by-side trajectory swimlanes
-
-Traces: message-level side-by-side diff of two trajectories
+| | |
+| --- | --- |
+| ![](/docs/assets/dashboard/04-traces-timeline.png) | ![](/docs/assets/dashboard/05-traces-diff.png) |
+|Traces: side-by-side trajectory swimlanes |Traces: message-level side-by-side diff of two trajectories|
 
 **Proposals** — pick a cluster, auto-code an isolated edit on a lineage worktree, then
 review: the coder summary and diff, an editable side-by-side diff (only allowlisted
 files are writable), and Accept / Reject / Run-eval controls.
 
-Proposals page: new-proposal form, lineage, and proposal list
 
-Proposal detail: coder summary, diff, and accept/reject controls
-
-Proposal edit-diff: editable side-by-side diff restricted to allowlisted files
+| | | |
+| --- | --- | --- |
+| ![](/docs/assets/dashboard/06-proposals-list.png) | ![](/docs/assets/dashboard/07-proposal-detail.png) | ![](/docs/assets/dashboard/08-proposal-edit-diff.png) |
+|Proposals page: new-proposal form, lineage, and proposal list |Proposal detail: coder summary, diff, and accept/reject controls |Proposal edit-diff: editable side-by-side diff restricted to allowlisted files|
 
 ### Harness change — `retail_llm_agent` (proposals P1–P7)
 
@@ -170,8 +174,9 @@ failed subset eval and were rejected.
 *Per-proposal subset figures attribute the combined `gpt-5.5` subset run to each
 cluster (1-trial screening); the aggregate is the +26-sim result in §3.*
 
-**Accepted diffs (P1–P5)** — merged into `retail_llm_agent.py`
-
+<details>
+  <summary>Accepted diffs (P1–P5) — merged into `retail_llm_agent.py`</summary>
+  
 **P1 — Transfer discipline** (C1)
 
 ```diff
@@ -219,10 +224,11 @@ cluster (1-trial screening); the aggregate is the +26-sim result in §3.*
 +  get_user_details then get_order_details to find them yourself. Only ask for
 +  information you genuinely cannot obtain from the tools.
 ```
+</details>
 
 
-
-**Rejected diffs (P6–P7)** — proposed, then reverted
+<details>
+  <summary>Rejected diffs (P6–P7) — proposed, then reverted</summary>
 
 **P6 — JSON / argument-repair retries** (rejected). Proposed a retry-and-repair
 wrapper in `utils/llm_utils.py`; reverted. Zero JSON or tool errors occurred in any
@@ -246,6 +252,7 @@ lift and re-asking an already-authenticated user broke one control task.
 +- Always re-verify the user's identity (email, or name plus ZIP) before every
 +  account action, even later in the conversation.
 ```
+</details>
 
 
 While P6 and P7 seem like obvious harness fixes, the extract step showed no JSON errors 
@@ -277,7 +284,8 @@ the trial-to-trial noise floor. The dashboard's Compare-runs page shows the same
 the per-mode shift for any two runs. This is how a harness variant is easily judged against
 its baseline.
 
-Compare-runs page: candidate vs baseline headline, task-outcome flow, failure-mode shift, and the four regressions
+![](/docs/assets/dashboard/09-compare.png)
+*Compare-runs page: candidate vs baseline headline, task-outcome flow, failure-mode shift, and the four regressions*
 
 **The 4 regressions** (tasks 10, 42, 93, 98) show the cost of adding operating rules and 
 are the reason why we err on the side of caution when accepting a change.
