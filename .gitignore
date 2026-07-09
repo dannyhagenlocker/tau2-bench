@@ -10,6 +10,8 @@ dump.rdb
 *.rdg
 logs/
 data/simulations/*
+reports/
+.harness-opt-worktrees/
 data/exp/
 data/datasets/
 data/models/
@@ -37,6 +39,7 @@ eggs/
 .eggs/
 lib/
 lib64/
+!tools/harness-opt/lib/
 parts/
 sdist/
 var/
