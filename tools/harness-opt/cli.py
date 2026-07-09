@@ -156,6 +156,64 @@ def dashboard(
 
 
 @app.command()
+def propose(
+    run: str = typer.Option(..., "--run"),
+    cluster: str = typer.Option(..., "--cluster"),
+    lineage: str | None = typer.Option(
+        None, "--lineage", help="Lineage id (default: run)"
+    ),
+    baseline: str | None = typer.Option(
+        None, "--baseline", help="Generation baseline run"
+    ),
+    coder: str = typer.Option("auto", "--coder", help="auto|claude|cursor|manual"),
+    eval: bool = typer.Option(
+        False, "--eval", help="Run subset eval (spends OpenAI budget)"
+    ),
+    overwrite: bool = typer.Option(False, "--overwrite"),
+) -> None:
+    """Create an auto-coded harness proposal from a cluster (lineage-isolated)."""
+    args = ["--run", run, "--cluster", cluster, "--coder", coder]
+    if lineage:
+        args.extend(["--lineage", lineage])
+    if baseline:
+        args.extend(["--baseline", baseline])
+    if eval:
+        args.append("--eval")
+    if overwrite:
+        args.append("--overwrite")
+    _run_script("propose.py", *args)
+
+
+@app.command()
+def accept(
+    run: str = typer.Option(..., "--run"),
+    proposal: str = typer.Option(..., "--proposal"),
+) -> None:
+    """Squash-commit a proposal onto its lineage branch."""
+    _run_script("manage_proposal.py", "accept", "--run", run, "--proposal", proposal)
+
+
+@app.command()
+def reject(
+    run: str = typer.Option(..., "--run"),
+    proposal: str = typer.Option(..., "--proposal"),
+) -> None:
+    """Discard a proposal's ephemeral branch (lineage untouched)."""
+    _run_script("manage_proposal.py", "reject", "--run", run, "--proposal", proposal)
+
+
+@app.command("list-proposals")
+def list_proposals(
+    run: str | None = typer.Option(None, "--run"),
+) -> None:
+    """Print the proposal table and lineage branches."""
+    args = ["list"]
+    if run:
+        args.extend(["--run", run])
+    _run_script("manage_proposal.py", *args)
+
+
+@app.command()
 def analyze(
     run: str = typer.Option(..., "--run"),
     baseline: str | None = typer.Option(None, "--baseline"),
