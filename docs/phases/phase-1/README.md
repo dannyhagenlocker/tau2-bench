@@ -31,6 +31,44 @@ Pages: **Overview**, **Clusters** (treemap → member table → representative g
 **Trace explorer**, **Compare traces** (side-by-side), **Compare runs** (per-task delta,
 pass↔fail flips), **Proposals** (Phase 2 stub), **Actions** (re-analyze).
 
+## v3 — full app (FastAPI + SPA) — current
+
+`dashboard_v3/` is the real multi-page app: a **FastAPI backend** serving a JSON
+API over the artifacts + a **vanilla ES-module SPA** (components, hash router,
+lazy-loaded traces). No build step and no third-party JS (a tiny `h()`
+hyperscript in `client/js/dom.js` keeps components clean); runs with zero install
+since FastAPI/uvicorn are already deps.
+
+```bash
+uv run python tools/harness-opt/cli.py dashboard          # → http://127.0.0.1:8770
+# or: uv run python tools/harness-opt/dashboard_v3/server.py --port 8770
+```
+
+Layout:
+
+```
+dashboard_v3/
+├── data.py            # cached read layer over reports/ + traces (lazy per-sim)
+├── server.py          # FastAPI: /api/runs, /summary, /tasks, /sims/{id}; serves client/
+└── client/
+    ├── index.html · styles.css
+    └── js/
+        ├── dom.js router.js api.js store.js app.js
+        ├── components/  waterfall.js diff.js jsontree.js trace_util.js widgets.js
+        └── pages/       overview.js clusters.js traces.js compare.js
+```
+
+API (traces are **lazy-loaded** per sim, so no multi-MB payload):
+`GET /api/runs`, `/api/runs/{run}/summary`, `/tasks`, `/sims/{sim_id}`.
+
+Pages (real hash routing + left-nav):
+- **Overview** — metric cards, L0 taxonomy bars, top clusters.
+- **Clusters** — cluster list (sized bars) → drill-down member table → "open"/"diff first two" into Traces.
+- **Traces** — the workspace: left picker (⚡ flaky pass↔fail one-click, searchable cluster→member A/B), main = waterfall timing tree (subtree collapse, click-to-expand pretty JSON, per-turn cost), pin B for side-by-side, **Diff** toggle (semantic LCS alignment, synchronized rows, word-level highlight), **Hide equal**.
+- **Compare runs** — pick a baseline; per-task Δ bars + improved/regressed flips.
+
+Supersedes the v2 static viewer and the Streamlit v1 (both retained for now).
+
 ## v2 — static HTML trace viewer
 
 The Streamlit app is good for run/cluster overview but has a soft ceiling on

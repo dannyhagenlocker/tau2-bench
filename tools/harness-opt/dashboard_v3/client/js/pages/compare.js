@@ -2,7 +2,7 @@ import { clear, h } from "../dom.js";
 import { api } from "../api.js";
 import { store } from "../store.js";
 import { navigate } from "../router.js";
-import { ftype, ftypeColor } from "../components/widgets.js";
+import { ftype, ftypeColor, mechanism } from "../components/widgets.js";
 
 const PASS = 0.999;
 
@@ -11,7 +11,7 @@ function perTask(sims) {
   for (const x of Object.values(sims)) {
     const t = (m[x.task_id] = m[x.task_id] || { rewards: [], fails: [] });
     t.rewards.push(x.reward);
-    if (x.reward < PASS) t.fails.push(x.failure_type);
+    if (x.reward < PASS) t.fails.push(x.mechanism || x.failure_type);
   }
   const out = {};
   for (const [t, v] of Object.entries(m)) {
@@ -226,7 +226,7 @@ export function ComparePage() {
           "tr",
           {},
           h("td", { class: "mono" }, "task " + t),
-          h("td", {}, ...modes.map((mm) => ftype(mm))),
+          h("td", {}, ...modes.map((mm) => mechanism(mm))),
           h("td", {}, sid ? h("button", { class: "btn small", onClick: () => navigate("/traces", { a: sid }) }, "open trace →") : null),
         ),
       );
