@@ -180,7 +180,7 @@ class ProposalMetadataArtifact(BaseModel):
     branch_name: str  # proposal/<id> (ephemeral eval branch)
     example_task_ids: list[str]
     failure_mode_summary: Optional[str] = None
-    status: Literal["draft", "evaluated", "accepted", "rejected"] = "draft"
+    status: Literal["draft", "evaluating", "evaluated", "accepted", "rejected"] = "draft"
     # Phase 2 lineage + coder tracking
     lineage_id: Optional[str] = None
     coder_backend: Optional[str] = None

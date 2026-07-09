@@ -288,6 +288,61 @@ def test_render_trace_keeps_args_truncates_results_and_nl():
     assert "task=42" in out
 
 
+def test_openai_coder_retries_on_non_unique_old_string(tmp_path, monkeypatch):
+    (tmp_path / "src" / "tau2" / "agent").mkdir(parents=True)
+    target = tmp_path / "src" / "tau2" / "agent" / "llm_agent.py"
+    target.write_text(
+        "x = 1\nx = 1\n"
+    )  # 'x = 1' appears twice → first attempt ambiguous
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+
+    calls = {"n": 0}
+
+    def fake_generate(model, messages, **kwargs):
+        calls["n"] += 1
+
+        class R:
+            cost = 0.001
+
+        if calls["n"] == 1:
+            R.content = json.dumps(
+                {
+                    "summary": "s",
+                    "edits": [
+                        {
+                            "path": "src/tau2/agent/llm_agent.py",
+                            "old_string": "x = 1",
+                            "new_string": "x = 2",
+                        }
+                    ],
+                }
+            )
+        else:
+            R.content = json.dumps(
+                {
+                    "summary": "s",
+                    "edits": [
+                        {
+                            "path": "src/tau2/agent/llm_agent.py",
+                            "old_string": "x = 1\nx = 1",
+                            "new_string": "x = 9\nx = 1",
+                        }
+                    ],
+                }
+            )
+        return R()
+
+    import tau2.utils.llm_utils as llm_utils
+
+    monkeypatch.setattr(llm_utils, "generate", fake_generate)
+
+    res = OpenAICoder(model="gpt-4.1").run("fix", tmp_path)
+    assert res.ok
+    assert calls["n"] == 2  # recovered on the second attempt
+    assert "x = 9" in target.read_text()
+    assert res.cost == pytest.approx(0.002)  # cost accumulated across attempts
+
+
 def test_openai_coder_rejects_forbidden_path(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
 
@@ -322,6 +377,21 @@ def test_ensure_lineage_creates_branch_and_worktree(tmp_repo):
     assert state.base_commit == state.tip_commit  # nothing accepted yet
     branches = _git(tmp_repo, "branch", "--list", "lineage/genA")
     assert "lineage/genA" in branches
+
+
+def test_ensure_lineage_reuses_worktree_across_checkouts(
+    tmp_repo, monkeypatch, tmp_path
+):
+    # First call creates the worktree at the configured location.
+    wt1, _ = lin.ensure_lineage("genA", repo=tmp_repo)
+    assert wt1.exists()
+
+    # Simulate invoking from a *different* checkout (different worktrees dir).
+    # The branch is already checked out at wt1, so a naive `git worktree add`
+    # would fail ("already checked out"); ensure_lineage must reuse wt1 instead.
+    monkeypatch.setenv("HARNESS_OPT_WORKTREES_DIR", str(tmp_path / "other_checkout_wt"))
+    wt2, _ = lin.ensure_lineage("genA", repo=tmp_repo)
+    assert wt2 == wt1
 
 
 def test_accept_advances_tip_by_one_squashed_commit(tmp_repo):
@@ -363,6 +433,41 @@ def test_proposals_stack_cumulatively(tmp_repo):
     # The cumulative change includes both edits.
     final = (worktree / "src" / "tau2" / "agent" / "llm_agent.py").read_text()
     assert "v1" in final and "EXTRA = 1" in final
+
+
+def test_proposal_files_and_apply_edit(tmp_repo):
+    worktree, _ = lin.ensure_lineage("genA", repo=tmp_repo)
+    lin.start_proposal(worktree, "p1")
+    _edit_and_commit(worktree, "AGENT_INSTRUCTION = 'v1'\n", "p1")
+
+    # proposal_files exposes original (lineage tip) vs modified (branch).
+    files = lin.proposal_files(worktree, "genA", "p1")
+    assert len(files) == 1
+    f = files[0]
+    assert f["path"] == "src/tau2/agent/llm_agent.py"
+    assert "v0" in f["original"] and "v1" in f["modified"]
+
+    # human edit → amend, single commit preserved, diff reflects new content.
+    base_tip = _git(tmp_repo, "rev-parse", "lineage/genA")
+    patch, stat = lin.apply_proposal_files(
+        worktree,
+        "genA",
+        "p1",
+        {"src/tau2/agent/llm_agent.py": "AGENT_INSTRUCTION = 'v2 edited'\n"},
+    )
+    assert "v2 edited" in patch
+    # Still exactly one commit ahead of the lineage tip (amended, not stacked).
+    assert _git(worktree, "rev-list", "--count", f"{base_tip}..proposal/p1") == "1"
+
+
+def test_apply_proposal_files_rejects_forbidden_path(tmp_repo):
+    worktree, _ = lin.ensure_lineage("genA", repo=tmp_repo)
+    lin.start_proposal(worktree, "p1")
+    _edit_and_commit(worktree, "AGENT_INSTRUCTION = 'v1'\n", "p1")
+    with pytest.raises(PermissionError):
+        lin.apply_proposal_files(
+            worktree, "genA", "p1", {"src/tau2/evaluator/evaluator.py": "cheat"}
+        )
 
 
 def test_reject_leaves_lineage_untouched(tmp_repo):

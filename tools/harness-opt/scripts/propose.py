@@ -15,6 +15,7 @@ import argparse
 import json
 import os
 import shutil
+import sys
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -53,17 +54,42 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _pid_alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
 @contextmanager
 def _lineage_lock(lineage_id: str):
     lock = lineage_lock(lineage_id)
     lock.parent.mkdir(parents=True, exist_ok=True)
+
+    def _acquire():
+        return os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+
     try:
-        fd = os.open(str(lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-    except FileExistsError as exc:
-        raise SystemExit(
-            f"Lineage '{lineage_id}' is locked ({lock}). Another `propose` may be "
-            "running on this lineage; remove the lock file if it is stale."
-        ) from exc
+        fd = _acquire()
+    except FileExistsError:
+        # Reclaim a stale lock left by a crashed/killed run (dead PID).
+        stale = False
+        try:
+            holder = int(lock.read_text().strip() or "0")
+            stale = holder <= 0 or not _pid_alive(holder)
+        except (ValueError, OSError):
+            stale = True
+        if not stale:
+            raise SystemExit(
+                f"Lineage '{lineage_id}' is locked ({lock}) by a running propose "
+                f"(pid {lock.read_text().strip()}). Wait for it or remove the lock if stale."
+            )
+        lock.unlink(missing_ok=True)
+        fd = _acquire()
+
     try:
         os.write(fd, str(os.getpid()).encode())
         os.close(fd)
@@ -114,14 +140,43 @@ def _run_candidate_subset(
     *,
     num_trials: int,
     max_concurrency: int,
+    log_path: Optional[Path] = None,
 ) -> None:
-    """Run the subset in the worktree (edited harness) then copy results to main data/."""
+    """Run the subset against the worktree's edited harness, then copy results.
+
+    Reuses the *main* venv's dependencies (no per-worktree `uv sync`) but loads
+    the worktree's edited ``src/tau2`` via PYTHONPATH, so the proposal's change is
+    what actually runs. Output is captured to ``log_path`` when given.
+    """
     import subprocess
 
+    env = {**os.environ}
+    # Load the proposal's EDITED harness from the worktree src...
+    env["PYTHONPATH"] = str(worktree / "src") + (
+        os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else ""
+    )
+    # ...but keep data (tasks/db/policy are invariant) and the results dir in the
+    # MAIN repo, which is stable. The worktree's data/ is gitignored so it isn't
+    # checked out, and tau2's checkpointer can't reliably persist results.json
+    # there. Results land directly in the main data/simulations (no copy needed).
+    main_sims = REPO_ROOT / "data" / "simulations"
+    main_sims.mkdir(parents=True, exist_ok=True)
+    env["TAU2_DATA_DIR"] = str(REPO_ROOT / "data")
+    # Start fresh: a leftover candidate run makes tau2 prompt "resume? (y/n)",
+    # which hangs a non-interactive subprocess forever.
+    stale_dir = main_sims / candidate_run
+    if stale_dir.exists():
+        shutil.rmtree(stale_dir, ignore_errors=True)
+    stale_json = stale_dir.with_suffix(".json")
+    if stale_json.exists():
+        stale_json.unlink()
+    # Unbuffered child stdout/stderr so eval.log streams line-by-line (the
+    # dashboard tails it live while the eval is in flight).
+    env["PYTHONUNBUFFERED"] = "1"
     cmd = [
-        "uv",
-        "run",
-        "tau2",
+        sys.executable,
+        "-m",
+        "tau2.cli",
         "run",
         "--domain",
         "retail",
@@ -134,19 +189,17 @@ def _run_candidate_subset(
         "--max-concurrency",
         str(max_concurrency),
     ]
-    subprocess.run(cmd, cwd=str(worktree), check=True)
-
-    src = worktree / "data" / "simulations" / candidate_run
-    if not src.exists():
-        src = src.with_suffix(".json")
-    dst = REPO_ROOT / "data" / "simulations" / candidate_run
-    if src.is_dir():
-        shutil.copytree(src, dst, dirs_exist_ok=True)
-    elif src.exists():
-        dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(src, dst)
+    if log_path is not None:
+        with open(log_path, "w") as lf:
+            subprocess.run(
+                cmd, cwd=str(worktree), check=True, env=env, stdout=lf, stderr=subprocess.STDOUT
+            )
     else:
-        raise FileNotFoundError(f"Candidate run results not found in worktree: {src}")
+        subprocess.run(cmd, cwd=str(worktree), check=True, env=env)
+
+    dst = main_sims / candidate_run
+    if not (dst.exists() or dst.with_suffix(".json").exists()):
+        raise FileNotFoundError(f"Candidate run results not found: {dst}")
 
 
 def _render_proposal_md(
@@ -253,6 +306,23 @@ def run_propose(
         (pdir / "coder_log.json").write_text(
             json.dumps(coder_result.to_log(prompt), indent=2)
         )
+
+        # A coder that errored (vs. a no-op manual run) is a hard failure: roll
+        # back the empty proposal branch + artifacts and surface the reason, so
+        # the dashboard shows the real error instead of a silent empty draft.
+        if not coder_result.ok:
+            lin.reject_proposal(worktree, lineage_id, proposal_id)
+            shutil.rmtree(pdir, ignore_errors=True)
+            rewrite_all(run_name)
+            err = coder_result.error or "coder produced no usable edits"
+            hint = ""
+            if "onnection" in err or "InternalServerError" in err:
+                hint = (
+                    " (the server appears to have no network access to the LLM "
+                    "API — run the dashboard from a shell with outbound network "
+                    "and OPENAI_API_KEY, not a network-sandboxed process)"
+                )
+            raise SystemExit(f"Coder [{coder_result.backend}] failed: {err}{hint}")
 
         # 4. Commit on the proposal branch; capture diff vs lineage tip.
         lin.commit_proposal(worktree, f"proposal {proposal_id}: {cluster_id}")
