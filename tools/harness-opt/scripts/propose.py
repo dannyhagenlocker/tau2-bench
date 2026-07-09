@@ -167,6 +167,7 @@ def run_propose(
     lineage_id: Optional[str] = None,
     baseline_run: Optional[str] = None,
     coder: str = "auto",
+    coder_model: Optional[str] = None,
     do_eval: bool = False,
     num_trials: int = 1,
     max_concurrency: int = 10,
@@ -209,7 +210,7 @@ def run_propose(
         reps = _pick_reps(cluster, features_by_id)
         summary = build_failure_summary(cluster, label, reps)
         prompt = build_coder_prompt(cluster, label, reps)
-        backend = get_coder(coder)
+        backend = get_coder(coder, model=coder_model)
         coder_result = backend.run(prompt, worktree)
         (pdir / "coder_log.json").write_text(
             json.dumps(coder_result.to_log(prompt), indent=2)
@@ -285,7 +286,10 @@ def main() -> None:
     parser.add_argument("--cluster", required=True)
     parser.add_argument("--lineage", help="Lineage id (default: run name)")
     parser.add_argument("--baseline", help="Generation baseline run (default: run)")
-    parser.add_argument("--coder", default="auto", help="auto|claude|cursor|manual")
+    parser.add_argument(
+        "--coder", default="auto", help="auto|openai|claude|cursor|manual"
+    )
+    parser.add_argument("--coder-model", help="Proposer model (default: gpt-4.1)")
     parser.add_argument(
         "--eval", action="store_true", help="Run subset eval (spends OpenAI budget)"
     )
@@ -300,6 +304,7 @@ def main() -> None:
         lineage_id=args.lineage,
         baseline_run=args.baseline,
         coder=args.coder,
+        coder_model=args.coder_model,
         do_eval=args.eval,
         num_trials=args.num_trials,
         max_concurrency=args.max_concurrency,

@@ -92,6 +92,13 @@
           "type": "array",
           "items": { "type": "string" }
         },
+        "escalated_to_human": { "type": "boolean" },
+        "last_agent_message": { "type": ["string", "null"] },
+        "tool_error_messages": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "mechanism_class": { "type": "string" },
         "policy_flags": { "$ref": "#/$defs/PolicyFlags" },
         "num_steps": { "type": "integer", "minimum": 0 },
         "agent_cost": { "type": ["number", "null"] },

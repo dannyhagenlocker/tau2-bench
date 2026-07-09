@@ -7,6 +7,7 @@ source of truth) so the client never downloads all transcripts at once.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any, Optional
 
@@ -23,7 +24,14 @@ from contracts.models import (  # noqa: E402
 )
 from dashboard_v2.generate import _flags, _steps_for_sim  # noqa: E402
 from lib.io import read_json_artifact  # noqa: E402
-from lib.paths import REPO_ROOT, artifact_path, report_dir  # noqa: E402
+from lib.paths import (  # noqa: E402  # noqa: E402
+    REPO_ROOT,
+    artifact_path,
+    lineages_dir,
+    proposal_dir,
+    proposals_dir,
+    report_dir,
+)
 from lib.paths import _reports_dir as reports_root  # noqa: E402
 from lib.signature_gloss import (  # noqa: E402
     gloss_cluster_signature,
@@ -396,6 +404,47 @@ def task_rows(run: str) -> list[dict[str, Any]]:
         c for c in ["task_id", "trial", "reward", "failure_type"] if c in df.columns
     ]
     return df[cols].to_dict(orient="records")
+
+
+# ---- Phase 2 proposals + lineages (read-only feeds) ---------------------
+
+
+def _read_json(path: Path) -> Optional[Any]:
+    try:
+        return json.loads(path.read_text()) if path.exists() else None
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def list_lineages() -> dict[str, Any]:
+    return _read_json(lineages_dir() / "index.json") or {"lineages": []}
+
+
+def proposals_index(run: str) -> dict[str, Any]:
+    return _read_json(proposals_dir(run) / "index.json") or {
+        "run_name": run,
+        "proposals": [],
+    }
+
+
+def proposal_detail(run: str, proposal_id: str) -> Optional[dict[str, Any]]:
+    pdir = proposal_dir(run, proposal_id)
+    if not pdir.exists():
+        return None
+
+    def _text(name: str) -> Optional[str]:
+        p = pdir / name
+        return p.read_text() if p.exists() else None
+
+    return {
+        "proposal_id": proposal_id,
+        "run_name": run,
+        "metadata": _read_json(pdir / "metadata.json"),
+        "coder_log": _read_json(pdir / "coder_log.json"),
+        "subset_results": _read_json(pdir / "subset_results.json"),
+        "proposal_md": _text("proposal.md"),
+        "diff": _text("diff.patch"),
+    }
 
 
 def summary_markdown(run: str) -> str:

@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
 import pytest
 from contracts.models import ProposalMetadataArtifact
+from lib import allowlist
 from lib import lineage as lin
-from lib.coder import ManualCoder, get_coder
+from lib.coder import ManualCoder, OpenAICoder, _apply_edits, get_coder
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -48,6 +50,160 @@ def test_coder_manual_default(monkeypatch):
     assert isinstance(get_coder("manual"), ManualCoder)
     res = ManualCoder().run("do stuff", Path("."))
     assert res.ok and res.backend == "manual"
+
+
+def test_auto_prefers_openai_when_key_present(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    assert isinstance(get_coder("auto"), OpenAICoder)
+
+
+def test_auto_falls_back_to_manual(monkeypatch):
+    # No OpenAI key and no CLI backends available → manual.
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setattr("lib.coder.ClaudeCoder.available", lambda self: False)
+    monkeypatch.setattr("lib.coder.CursorCoder.available", lambda self: False)
+    assert isinstance(get_coder("auto"), ManualCoder)
+
+
+@pytest.mark.parametrize(
+    "path,expected",
+    [
+        ("src/tau2/agent/llm_agent.py", True),
+        ("src/tau2/registry.py", True),
+        ("src/tau2/utils/llm_utils.py", True),
+        ("src/tau2/orchestrator/orchestrator.py", True),
+        ("src/tau2/agent/my_new_agent.py", True),  # new agent module
+        ("src/tau2/agent/__init__.py", False),  # dunder
+        ("src/tau2/agent/sub/deep.py", False),  # nested, not directly under agent/
+        ("src/tau2/domains/retail/tools.py", False),  # tool behaviour
+        ("src/tau2/evaluator/evaluator.py", False),  # scorer
+        ("src/tau2/user/user_simulator.py", False),  # user sim
+        ("data/tau2/domains/retail/tasks.json", False),
+        ("data/tau2/domains/retail/policy.md", False),
+        ("tools/harness-opt/dashboard_v3/data.py", False),
+    ],
+)
+def test_allowlist(path, expected):
+    assert allowlist.is_allowed(path) is expected
+
+
+def test_assert_allowed_raises_on_forbidden():
+    with pytest.raises(PermissionError):
+        allowlist.assert_allowed(
+            ["src/tau2/agent/llm_agent.py", "src/tau2/evaluator/evaluator.py"]
+        )
+
+
+def test_apply_edits_atomic_and_allowlisted(tmp_path):
+    (tmp_path / "src" / "tau2" / "agent").mkdir(parents=True)
+    target = tmp_path / "src" / "tau2" / "agent" / "llm_agent.py"
+    target.write_text("AGENT_INSTRUCTION = 'v0'\n")
+
+    # A unique-match replace + a new agent file, both allowlisted.
+    ok, err, touched = _apply_edits(
+        tmp_path,
+        [
+            {
+                "path": "src/tau2/agent/llm_agent.py",
+                "old_string": "AGENT_INSTRUCTION = 'v0'",
+                "new_string": "AGENT_INSTRUCTION = 'v1: confirm before mutations'",
+            },
+            {
+                "path": "src/tau2/agent/careful_agent.py",
+                "new_file": True,
+                "content": "# custom agent\n",
+            },
+        ],
+    )
+    assert ok and err is None
+    assert "v1: confirm" in target.read_text()
+    assert (tmp_path / "src" / "tau2" / "agent" / "careful_agent.py").exists()
+    assert set(touched) == {
+        "src/tau2/agent/llm_agent.py",
+        "src/tau2/agent/careful_agent.py",
+    }
+
+
+def test_apply_edits_rejects_non_unique_old_string(tmp_path):
+    (tmp_path / "src" / "tau2" / "agent").mkdir(parents=True)
+    target = tmp_path / "src" / "tau2" / "agent" / "llm_agent.py"
+    target.write_text("x = 1\nx = 1\n")  # two matches
+    ok, err, _ = _apply_edits(
+        tmp_path,
+        [
+            {
+                "path": "src/tau2/agent/llm_agent.py",
+                "old_string": "x = 1",
+                "new_string": "x = 2",
+            }
+        ],
+    )
+    assert not ok and "not unique" in err
+    assert target.read_text() == "x = 1\nx = 1\n"  # unchanged (atomic)
+
+
+def test_openai_coder_applies_monkeypatched_edits(tmp_path, monkeypatch):
+    (tmp_path / "src" / "tau2" / "agent").mkdir(parents=True)
+    (tmp_path / "src" / "tau2" / "agent" / "llm_agent.py").write_text(
+        "AGENT_INSTRUCTION = 'v0'\n"
+    )
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+
+    class _Resp:
+        content = json.dumps(
+            {
+                "summary": "add confirmation reminder",
+                "edits": [
+                    {
+                        "path": "src/tau2/agent/llm_agent.py",
+                        "old_string": "AGENT_INSTRUCTION = 'v0'",
+                        "new_string": "AGENT_INSTRUCTION = 'v0 + confirm'",
+                    }
+                ],
+            }
+        )
+        cost = 0.001
+
+    def _fake_generate(model, messages, **kwargs):
+        return _Resp()
+
+    import tau2.utils.llm_utils as llm_utils
+
+    monkeypatch.setattr(llm_utils, "generate", _fake_generate)
+
+    res = OpenAICoder(model="gpt-4.1").run("fix it", tmp_path)
+    assert res.ok and res.backend == "openai"
+    assert res.cost == 0.001 and res.model == "gpt-4.1"
+    assert (
+        "confirm" in (tmp_path / "src" / "tau2" / "agent" / "llm_agent.py").read_text()
+    )
+
+
+def test_openai_coder_rejects_forbidden_path(tmp_path, monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+
+    class _Resp:
+        content = json.dumps(
+            {
+                "summary": "sneaky",
+                "edits": [
+                    {
+                        "path": "src/tau2/evaluator/evaluator.py",
+                        "old_string": "a",
+                        "new_string": "b",
+                    }
+                ],
+            }
+        )
+        cost = 0.0
+
+    import tau2.utils.llm_utils as llm_utils
+
+    monkeypatch.setattr(llm_utils, "generate", lambda *a, **k: _Resp())
+
+    res = OpenAICoder().run("do it", tmp_path)
+    assert not res.ok
+    assert "allowlist" in (res.error or "")
 
 
 def test_ensure_lineage_creates_branch_and_worktree(tmp_repo):

@@ -18,6 +18,7 @@ from lib.db_diff import diff_dbs
 from lib.trace_parser import (
     build_nl_signature,
     classify_failure,
+    classify_mechanism,
     denoise_nl,
     extract_write_sequence,
     normalize_tool_chain,
@@ -217,6 +218,75 @@ def test_analyze_pipeline(smoke_simulation, tmp_path, monkeypatch):
     assert clusters["layer"] == "final"
     assert len(clusters["clusters"]) >= 1
 
+
+
+def test_classify_mechanism_rules():
+    # escalation dominates "did nothing" on a DB failure
+    assert (
+        classify_mechanism(
+            FailureType.DB_ONLY,
+            escalated_to_human=True,
+            write_tool_sequence=[],
+            db_diff_kinds={"missed": 3},
+            tool_error_messages=[],
+        )
+        == "bailed_transfer"
+    )
+    # acted with a wrong value -> wrong_params
+    assert (
+        classify_mechanism(
+            FailureType.DB_ONLY,
+            escalated_to_human=False,
+            write_tool_sequence=["cancel_pending_order"],
+            db_diff_kinds={"wrong": 1},
+            tool_error_messages=[],
+        )
+        == "wrong_params"
+    )
+    # acted but only missed writes -> incomplete
+    assert (
+        classify_mechanism(
+            FailureType.DB_ONLY,
+            escalated_to_human=False,
+            write_tool_sequence=["return_delivered_order_items"],
+            db_diff_kinds={"missed": 2},
+            tool_error_messages=[],
+        )
+        == "incomplete_multitask"
+    )
+    # no writes, no escalation -> stalled
+    assert (
+        classify_mechanism(
+            FailureType.DB_ONLY,
+            escalated_to_human=False,
+            write_tool_sequence=[],
+            db_diff_kinds={"missed": 1},
+            tool_error_messages=[],
+        )
+        == "stalled_no_action"
+    )
+    # couldn't identify user then bailed
+    assert (
+        classify_mechanism(
+            FailureType.MIXED,
+            escalated_to_human=True,
+            write_tool_sequence=[],
+            db_diff_kinds=None,
+            tool_error_messages=["error user not found"],
+        )
+        == "identification_failure"
+    )
+    # DB ok, NL failed, no bail -> comm miss
+    assert (
+        classify_mechanism(
+            FailureType.NL_ONLY,
+            escalated_to_human=False,
+            write_tool_sequence=["return_delivered_order_items"],
+            db_diff_kinds=None,
+            tool_error_messages=[],
+        )
+        == "comm_miss"
+    )
 
 def test_oracle_build(smoke_simulation, tmp_path, monkeypatch):
     reports_dir = tmp_path / "reports"

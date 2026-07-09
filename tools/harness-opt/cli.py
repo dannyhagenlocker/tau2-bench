@@ -165,7 +165,12 @@ def propose(
     baseline: str | None = typer.Option(
         None, "--baseline", help="Generation baseline run"
     ),
-    coder: str = typer.Option("auto", "--coder", help="auto|claude|cursor|manual"),
+    coder: str = typer.Option(
+        "auto", "--coder", help="auto|openai|claude|cursor|manual"
+    ),
+    coder_model: str | None = typer.Option(
+        None, "--coder-model", help="Proposer model (default gpt-4.1)"
+    ),
     eval: bool = typer.Option(
         False, "--eval", help="Run subset eval (spends OpenAI budget)"
     ),
@@ -173,6 +178,8 @@ def propose(
 ) -> None:
     """Create an auto-coded harness proposal from a cluster (lineage-isolated)."""
     args = ["--run", run, "--cluster", cluster, "--coder", coder]
+    if coder_model:
+        args.extend(["--coder-model", coder_model])
     if lineage:
         args.extend(["--lineage", lineage])
     if baseline:

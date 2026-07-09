@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 from contracts.models import Cluster, ClustersArtifact, FailureType, SimulationFeatures
 
@@ -104,18 +104,20 @@ def _failure_rate_for_tasks(
     return avg_rate, task_ids
 
 
+def _dominant_mechanism(sims: list[SimulationFeatures]) -> str:
+    counts = Counter(s.mechanism_class for s in sims)
+    return counts.most_common(1)[0][0]
+
+
 def cluster_l0(
     simulations: list[SimulationFeatures],
     run_name: str,
 ) -> ClustersArtifact:
+    """L0 taxonomy now buckets by root-cause mechanism (primary axis), not the
+    db_only/nl_only/mixed symptom axis."""
     buckets: dict[str, list[SimulationFeatures]] = defaultdict(list)
     for sim in simulations:
-        if sim.failure_type == FailureType.PASS:
-            key = "pass"
-        elif sim.failure_type == FailureType.MIXED:
-            key = f"mixed:{sim.termination_reason or 'unknown'}"
-        else:
-            key = f"{sim.failure_type.value}:{sim.termination_reason or 'unknown'}"
+        key = "pass" if sim.failure_type == FailureType.PASS else sim.mechanism_class
         buckets[key].append(sim)
 
     clusters: list[Cluster] = []
@@ -126,6 +128,7 @@ def cluster_l0(
                 id=f"l0_{idx:03d}",
                 name=key,
                 failure_type=sims[0].failure_type.value,
+                mechanism=key if key != "pass" else None,
                 simulation_ids=[s.simulation_id for s in sims],
                 task_ids=task_ids,
                 failure_rate=failure_rate,
@@ -173,12 +176,14 @@ def cluster_l1_l2(
     ):
         failure_rate, task_ids = _failure_rate_for_tasks(sims)
         ft = sims[0].failure_type.value
+        mechanism = _dominant_mechanism(sims)
         fp = _tool_fingerprint(sims[0])
         clusters.append(
             Cluster(
                 id=f"c_{idx:03d}",
-                name=f"{ft} | {signature}",
+                name=f"{mechanism} | {signature}",
                 failure_type=ft,
+                mechanism=mechanism,
                 parent_l0_id=parent,
                 simulation_ids=[s.simulation_id for s in sims],
                 task_ids=task_ids,

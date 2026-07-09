@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from typing import Any, Optional
 
@@ -189,6 +190,50 @@ def denoise_nl(text: Optional[str]) -> str:
     return re.sub(r"\s+", " ", stripped).strip().lower()
 
 
+_FREE_NOISE = re.compile(r"(#\w+|\$[\d,.]+|\b\d[\d,.]*\b|`[^`]*`)")
+TRANSFER_TOOL = "transfer_to_human_agents"
+
+
+def _unwrap_message(text: Optional[str]) -> str:
+    """Unwrap agent messages sometimes serialized as {'message': '...'}."""
+    if not text:
+        return ""
+    stripped = text.strip()
+    try:
+        obj = json.loads(stripped)
+        if isinstance(obj, dict) and "message" in obj:
+            return str(obj["message"])
+    except (json.JSONDecodeError, ValueError):
+        pass
+    return stripped
+
+
+def denoise_free_text(text: Optional[str], *, cap: int = 200) -> str:
+    """Strip task-specific values (IDs, amounts) and markdown from free text,
+    keeping content words so it clusters by *what happened* not *which order*."""
+    unwrapped = _unwrap_message(text)
+    stripped = _FREE_NOISE.sub(" ", unwrapped)
+    words = re.sub(r"[^a-zA-Z ]+", " ", stripped)
+    return re.sub(r"\s+", " ", words).strip().lower()[:cap]
+
+
+def extract_last_agent_message(messages: list[Message]) -> Optional[str]:
+    for msg in reversed(messages):
+        if isinstance(msg, AssistantMessage) and msg.content:
+            return denoise_free_text(msg.content)
+    return None
+
+
+def extract_tool_errors(messages: list[Message]) -> list[str]:
+    seen: list[str] = []
+    for msg in messages:
+        if isinstance(msg, ToolMessage) and msg.error:
+            denoised = denoise_free_text(msg.content, cap=80)
+            if denoised and denoised not in seen:
+                seen.append(denoised)
+    return seen
+
+
 def build_nl_signature(
     reward_info: Optional[RewardInfo],
 ) -> tuple[Optional[str], list[str]]:
@@ -263,6 +308,65 @@ def build_embedding_text(
 _DB_FAILURE_TYPES = frozenset({FailureType.DB_ONLY, FailureType.MIXED})
 _NL_FAILURE_TYPES = frozenset({FailureType.NL_ONLY, FailureType.MIXED})
 
+# Primary root-cause mechanism axis. Deterministic classifier over the signals
+# extracted below; ~91% agreement with hand labels on baseline-gpt55-t2 (see
+# eval/root_cause_labels.*.json). Replaces the symptom axis (db_only/nl_only/
+# mixed) for bucketing/naming; failure_type is kept as a secondary attribute.
+MECHANISM_CLASSES = (
+    "bailed_transfer",
+    "wrong_params",
+    "incomplete_multitask",
+    "stalled_no_action",
+    "identification_failure",
+    "comm_miss",
+    "premature_termination",
+    "other",
+)
+
+
+def classify_mechanism(
+    failure_type: FailureType,
+    *,
+    escalated_to_human: bool,
+    write_tool_sequence: list[str],
+    db_diff_kinds: Optional[dict[str, int]],
+    tool_error_messages: list[str],
+) -> str:
+    """Deterministic root-cause label from extracted signals.
+
+    Precedence encodes what actually drove the failure: bailing/identification
+    dominate "did nothing"; among agents that acted, a wrong value beats a
+    missed one. The 3 residual ambiguities (a refusal that reads as a comm-miss,
+    an incomplete task that also has a wrong value) are accepted (~91%).
+    """
+    if failure_type == FailureType.PASS:
+        return "pass"
+    if failure_type == FailureType.TERMINATION:
+        return "premature_termination"
+
+    errs = " ".join(tool_error_messages or []).lower()
+    not_found = "not found" in errs
+
+    if failure_type in (FailureType.NL_ONLY, FailureType.COMMUNICATE_ONLY):
+        return "bailed_transfer" if escalated_to_human else "comm_miss"
+
+    # DB-gated (db_only / mixed)
+    if not write_tool_sequence:
+        if not_found and escalated_to_human:
+            return "identification_failure"
+        if escalated_to_human:
+            return "bailed_transfer"
+        return "stalled_no_action"
+
+    if escalated_to_human:
+        return "bailed_transfer"
+    kinds = db_diff_kinds or {}
+    if "wrong" in kinds or "extra" in kinds:
+        return "wrong_params"
+    if "missed" in kinds:
+        return "incomplete_multitask"
+    return "other"
+
 
 def extract_simulation_features(
     sim: SimulationRun,
@@ -300,6 +404,20 @@ def extract_simulation_features(
     if failure_type in _NL_FAILURE_TYPES:
         nl_failure_signature, nl_failed_assertions = build_nl_signature(sim.reward_info)
 
+    # Root-cause "why" signals extracted from the raw trace.
+    escalated = any(rec.name == TRANSFER_TOOL for rec in tool_sequence)
+    last_agent_message = extract_last_agent_message(messages)
+    tool_error_messages = extract_tool_errors(messages)
+
+    # Primary axis: deterministic root-cause mechanism.
+    mechanism_class = classify_mechanism(
+        failure_type,
+        escalated_to_human=escalated,
+        write_tool_sequence=write_sequence,
+        db_diff_kinds=db_diff_kinds,
+        tool_error_messages=tool_error_messages,
+    )
+
     embedding_text = build_embedding_text(
         failure_type,
         normalized_chain,
@@ -327,6 +445,10 @@ def extract_simulation_features(
         db_diff_entities=db_diff_entities,
         nl_failure_signature=nl_failure_signature,
         nl_failed_assertions=nl_failed_assertions,
+        escalated_to_human=escalated,
+        last_agent_message=last_agent_message,
+        tool_error_messages=tool_error_messages,
+        mechanism_class=mechanism_class,
         policy_flags=policy_flags,
         num_steps=len(messages),
         agent_cost=sim.agent_cost,

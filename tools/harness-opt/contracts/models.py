@@ -58,6 +58,14 @@ class SimulationFeatures(BaseModel):
     # P3: denoised NL-assertion failure signal
     nl_failure_signature: Optional[str] = None
     nl_failed_assertions: list[str] = Field(default_factory=list)
+    # Root-cause "why" signals (enrichment for embedding documents)
+    escalated_to_human: bool = False
+    last_agent_message: Optional[str] = None
+    tool_error_messages: list[str] = Field(default_factory=list)
+    # Primary axis: deterministic root-cause mechanism (see classify_mechanism).
+    # failure_type (db_only/nl_only/mixed) is kept as a secondary reward-basis
+    # attribute; mechanism_class is the actionable cause axis.
+    mechanism_class: str = "unknown"
     policy_flags: PolicyFlags
     num_steps: int
     agent_cost: Optional[float] = None
@@ -80,6 +88,7 @@ class Cluster(BaseModel):
     task_ids: list[str] = Field(default_factory=list)
     failure_rate: float = 0.0
     count: int = 0
+    mechanism: Optional[str] = None
     signature: Optional[str] = None
     tool_sequence_fingerprint: Optional[str] = None
     policy_flag_summary: Optional[dict[str, int]] = None
@@ -89,6 +98,7 @@ class ClustersArtifact(BaseModel):
     contract_version: str = CONTRACT_VERSION
     run_name: str
     layer: Literal["l0", "l1", "l2", "final"]
+    method: str = "signature"
     clusters: list[Cluster]
 
 

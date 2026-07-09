@@ -1,0 +1,230 @@
+{
+  "run": "baseline-gpt55-t2",
+  "taxonomy": [
+    "BAILED_TRANSFER",
+    "COMM_MISS",
+    "IDENTIFICATION_FAILURE",
+    "INCOMPLETE_MULTITASK",
+    "STALLED_NO_ACTION",
+    "WRONG_DECISION_REFUSED",
+    "WRONG_PARAMS"
+  ],
+  "labels": {
+    "33fd1fa7-b995-48bc-a1bd-80f223520086": {
+      "task_id": "0",
+      "trial": 1,
+      "root_cause": "WRONG_PARAMS",
+      "note": "executed write with wrong values/operation; often claimed success"
+    },
+    "12b68909-9177-4aa2-9255-f980c65598b1": {
+      "task_id": "104",
+      "trial": 0,
+      "root_cause": "INCOMPLETE_MULTITASK",
+      "note": "completed some required writes, omitted others"
+    },
+    "91b4f7d7-1458-4925-81fe-f0c3af7a82b4": {
+      "task_id": "105",
+      "trial": 0,
+      "root_cause": "WRONG_DECISION_REFUSED",
+      "note": "incorrectly declined a doable request citing a constraint"
+    },
+    "6a7d9813-7876-4633-864e-94bf162e03c8": {
+      "task_id": "108",
+      "trial": 0,
+      "root_cause": "STALLED_NO_ACTION",
+      "note": "estimated/asked then stopped; never executed the write"
+    },
+    "91f56cf4-5542-4f55-a5a1-8d2158896f4b": {
+      "task_id": "108",
+      "trial": 1,
+      "root_cause": "STALLED_NO_ACTION",
+      "note": "estimated/asked then stopped; never executed the write"
+    },
+    "1212840a-421c-469f-9fbf-951f5bee8609": {
+      "task_id": "111",
+      "trial": 0,
+      "root_cause": "INCOMPLETE_MULTITASK",
+      "note": "completed some required writes, omitted others"
+    },
+    "ff564ca0-e8c6-489a-ad93-cac2c6a36bc3": {
+      "task_id": "19",
+      "trial": 1,
+      "root_cause": "BAILED_TRANSFER",
+      "note": "ended via transfer_to_human without completing task"
+    },
+    "0017668c-c3c9-4af8-b75a-1d75c9278586": {
+      "task_id": "20",
+      "trial": 1,
+      "root_cause": "WRONG_PARAMS",
+      "note": "executed write with wrong values/operation; often claimed success"
+    },
+    "e3de4109-5484-45a5-bd43-4cc0d43fdb32": {
+      "task_id": "27",
+      "trial": 0,
+      "root_cause": "BAILED_TRANSFER",
+      "note": "ended via transfer_to_human without completing task"
+    },
+    "6cb1b7fd-5acf-481b-9ebd-2381b1d82dd9": {
+      "task_id": "27",
+      "trial": 1,
+      "root_cause": "BAILED_TRANSFER",
+      "note": "ended via transfer_to_human without completing task"
+    },
+    "34815023-a194-40f4-a80e-1a23b579a608": {
+      "task_id": "28",
+      "trial": 0,
+      "root_cause": "BAILED_TRANSFER",
+      "note": "ended via transfer_to_human without completing task"
+    },
+    "a7f66682-8c30-46db-8f50-d5217a930a71": {
+      "task_id": "30",
+      "trial": 0,
+      "root_cause": "BAILED_TRANSFER",
+      "note": "ended via transfer_to_human without completing task"
+    },
+    "4a5c57ed-0470-400d-9131-77a76b747a0e": {
+      "task_id": "30",
+      "trial": 1,
+      "root_cause": "WRONG_PARAMS",
+      "note": "executed write with wrong values/operation; often claimed success"
+    },
+    "98e4de17-bc13-4f56-8870-d96cecbdbd60": {
+      "task_id": "31",
+      "trial": 1,
+      "root_cause": "BAILED_TRANSFER",
+      "note": "ended via transfer_to_human without completing task"
+    },
+    "7b35a285-b1b7-401d-88d9-5b7b8c1b38aa": {
+      "task_id": "32",
+      "trial": 0,
+      "root_cause": "BAILED_TRANSFER",
+      "note": "ended via transfer_to_human without completing task"
+    },
+    "86961faa-68f9-42cc-9ec0-d2ac408abc5e": {
+      "task_id": "32",
+      "trial": 1,
+      "root_cause": "BAILED_TRANSFER",
+      "note": "ended via transfer_to_human without completing task"
+    },
+    "4b3c7d1f-c69f-436b-b34e-f0b8908fc2e9": {
+      "task_id": "36",
+      "trial": 1,
+      "root_cause": "IDENTIFICATION_FAILURE",
+      "note": "could not identify user/order; failed to proceed"
+    },
+    "3747dc26-c9f0-4aab-b327-2a39bdc8e99c": {
+      "task_id": "37",
+      "trial": 0,
+      "root_cause": "IDENTIFICATION_FAILURE",
+      "note": "could not identify user/order; failed to proceed"
+    },
+    "94266e32-8f83-4fea-b85d-13895620211d": {
+      "task_id": "38",
+      "trial": 0,
+      "root_cause": "WRONG_PARAMS",
+      "note": "executed write with wrong values/operation; often claimed success"
+    },
+    "b65c9d83-3b95-409f-b656-1df76825acda": {
+      "task_id": "38",
+      "trial": 1,
+      "root_cause": "WRONG_PARAMS",
+      "note": "executed write with wrong values/operation; often claimed success"
+    },
+    "4227d2d3-89a6-4e98-8eb0-1f6c00ddbfef": {
+      "task_id": "41",
+      "trial": 0,
+      "root_cause": "WRONG_PARAMS",
+      "note": "executed write with wrong values/operation; often claimed success"
+    },
+    "e9ea50c4-f28c-4cf1-99f2-24c9bbd39176": {
+      "task_id": "41",
+      "trial": 1,
+      "root_cause": "INCOMPLETE_MULTITASK",
+      "note": "completed some required writes, omitted others"
+    },
+    "b31d8b79-6336-42b3-bac2-8bb500440a72": {
+      "task_id": "46",
+      "trial": 0,
+      "root_cause": "BAILED_TRANSFER",
+      "note": "ended via transfer_to_human without completing task"
+    },
+    "053a71a2-8ff8-4c5c-a585-84314da01bf0": {
+      "task_id": "59",
+      "trial": 0,
+      "root_cause": "WRONG_PARAMS",
+      "note": "executed write with wrong values/operation; often claimed success"
+    },
+    "edadaf31-ab16-4c70-96d4-84ff525d6e41": {
+      "task_id": "60",
+      "trial": 0,
+      "root_cause": "WRONG_PARAMS",
+      "note": "executed write with wrong values/operation; often claimed success"
+    },
+    "85ba7816-8981-4ec3-9e6b-88b199ea9a46": {
+      "task_id": "60",
+      "trial": 1,
+      "root_cause": "WRONG_PARAMS",
+      "note": "executed write with wrong values/operation; often claimed success"
+    },
+    "8a454f15-7885-4bab-86a9-37e366be1c0f": {
+      "task_id": "64",
+      "trial": 0,
+      "root_cause": "WRONG_PARAMS",
+      "note": "executed write with wrong values/operation; often claimed success"
+    },
+    "8d628fd3-f3ea-420c-a3dc-fd35b1f1de6b": {
+      "task_id": "66",
+      "trial": 0,
+      "root_cause": "WRONG_PARAMS",
+      "note": "executed write with wrong values/operation; often claimed success"
+    },
+    "15ea52b7-0cf5-4fda-898e-7f8894b08ce7": {
+      "task_id": "66",
+      "trial": 1,
+      "root_cause": "WRONG_PARAMS",
+      "note": "executed write with wrong values/operation; often claimed success"
+    },
+    "edc0863b-2b52-41e8-b5ed-c83dd65b774d": {
+      "task_id": "67",
+      "trial": 0,
+      "root_cause": "BAILED_TRANSFER",
+      "note": "ended via transfer_to_human without completing task"
+    },
+    "667a5f64-88e4-4248-8957-eed6e0bc9b3f": {
+      "task_id": "68",
+      "trial": 0,
+      "root_cause": "BAILED_TRANSFER",
+      "note": "ended via transfer_to_human without completing task"
+    },
+    "1e83c3bc-a875-455f-a8ad-954cd6734ae3": {
+      "task_id": "68",
+      "trial": 1,
+      "root_cause": "BAILED_TRANSFER",
+      "note": "ended via transfer_to_human without completing task"
+    },
+    "19448b0e-d14a-4d6d-955f-dc3149c30560": {
+      "task_id": "76",
+      "trial": 1,
+      "root_cause": "WRONG_PARAMS",
+      "note": "executed write with wrong values/operation; often claimed success"
+    },
+    "37952104-5ee2-4df6-9322-7208c63ac8ef": {
+      "task_id": "78",
+      "trial": 0,
+      "root_cause": "BAILED_TRANSFER",
+      "note": "ended via transfer_to_human without completing task"
+    },
+    "dc6fc6ce-ae01-47ae-bd78-c4a58f7cb0b8": {
+      "task_id": "79",
+      "trial": 0,
+      "root_cause": "WRONG_PARAMS",
+      "note": "executed write with wrong values/operation; often claimed success"
+    },
+    "b079be78-57b2-4f5b-972c-401c66a8ae67": {
+      "task_id": "88",
+      "trial": 0,
+      "root_cause": "WRONG_PARAMS",
+      "note": "executed write with wrong values/operation; often claimed success"
+    }
+  }
+}

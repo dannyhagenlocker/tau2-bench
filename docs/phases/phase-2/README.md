@@ -18,16 +18,30 @@ Code: [tools/harness-opt/lib/lineage.py](../../../tools/harness-opt/lib/lineage.
 
 ## Coder backends
 
-The actual harness edit is produced by a local coding-agent CLI run headless in the worktree ([tools/harness-opt/lib/coder.py](../../../tools/harness-opt/lib/coder.py)):
+The harness edit is produced by a coder backend run in the worktree ([tools/harness-opt/lib/coder.py](../../../tools/harness-opt/lib/coder.py)):
 
 | `--coder` | Backend | Notes |
 |-----------|---------|-------|
-| `auto` (default) | claude → cursor → manual | first available |
-| `claude` | Claude Code `claude -p --output-format json` | installed; primary |
-| `cursor` | `cursor-agent` CLI or `cursor-sdk` | optional (not installed by default) |
-| `manual` | none | prep worktree + evidence, no auto-edit (also used by tests) |
+| `auto` (default) | openai → claude → cursor → manual | first available |
+| `openai` | **Self-contained**: OpenAI key via `llm_utils.generate` → structured edits | **default & reproducible**; cost on the $50 budget, logged |
+| `claude` | Claude Code `claude -p` | optional / off-ledger (external subscription) |
+| `cursor` | `cursor-agent` CLI or `cursor-sdk` | optional / off-ledger |
+| `manual` | none | prep worktree + evidence, no auto-edit (test default) |
 
-Coder cost uses the local Claude/Cursor subscription — separate from the $50 OpenAI benchmark budget.
+**`openai` is the default** because it is the only fully self-contained backend: it runs on the provided API key (per the assignment, the $50 covers "any LLM-powered tooling"), needs no external tools, and is reproducible from just the key. Proposer defaults to a cheap dev model (`gpt-4.1`, override with `--coder-model`); the change it writes is still evaluated under `gpt-5.5`. Report the proposer model as a tooling model-difference. `claude`/`cursor` are opt-in dev conveniences whose cost is off the OpenAI ledger.
+
+Coder cost + model are captured in `coder_log.json`.
+
+## Edit allowlist (precise, northstar-grounded)
+
+The `openai` proposer may edit **only** the handful of agent-behaviour files from the northstar Green Lines ([tools/harness-opt/lib/allowlist.py](../../../tools/harness-opt/lib/allowlist.py)) — this shrinks the search space and hard-enforces the Red lines:
+
+- `src/tau2/agent/llm_agent.py` (★ primary prompt + agent logic)
+- a new `*.py` agent module under `src/tau2/agent/` + register in `src/tau2/registry.py`
+- `src/tau2/utils/llm_utils.py` (LLM call wrapper)
+- `src/tau2/orchestrator/orchestrator.py` (agent-side recovery; fairness-sensitive)
+
+Everything else is rejected, and the Red lines (`data/tau2/domains/**`, `src/tau2/domains/retail/tools.py`, `src/tau2/evaluator/**`, `src/tau2/user/**`) are explicitly denied. Runner/analysis-tooling surfaces are deliberately excluded to keep the proposer focused. The model returns structured `{path, old_string, new_string}` / new-file edits, which we validate against the allowlist and apply atomically (unique-match required) — we never trust the model to patch raw diffs.
 
 ## CLI
 
