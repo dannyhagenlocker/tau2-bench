@@ -25,6 +25,10 @@ from dashboard_v2.generate import _flags, _steps_for_sim  # noqa: E402
 from lib.io import read_json_artifact  # noqa: E402
 from lib.paths import REPO_ROOT, artifact_path, report_dir  # noqa: E402
 from lib.paths import _reports_dir as reports_root  # noqa: E402
+from lib.signature_gloss import (  # noqa: E402
+    gloss_cluster_signature,
+    gloss_db_signature,
+)
 
 from tau2.data_model.simulation import Results  # noqa: E402
 
@@ -121,6 +125,7 @@ def run_summary(run: str) -> dict[str, Any]:
             "failure_type": f.failure_type.value,
             "termination_reason": f.termination_reason,
             "db_diff_signature": f.db_diff_signature,
+            "db_gloss": gloss_db_signature(f.db_diff_signature),
             "nl_failure_signature": f.nl_failure_signature,
             "tool_chain": f.normalized_tool_chain or [t.name for t in f.tool_sequence],
             "flags": _flags(f),
@@ -140,6 +145,7 @@ def run_summary(run: str) -> dict[str, Any]:
                 "name": c.name,
                 "failure_type": c.failure_type,
                 "signature": c.signature or "",
+                "gloss": gloss_cluster_signature(c.signature or c.name),
                 "count": c.count,
                 "failure_rate": c.failure_rate,
                 "label": lb.display_name if lb else c.name,
@@ -225,7 +231,9 @@ def _failure_reason(sim) -> Optional[dict[str, Any]]:
     ]
     return {
         "reward": ri.reward,
-        "reward_basis": [getattr(rt, "value", str(rt)) for rt in (ri.reward_basis or [])],
+        "reward_basis": [
+            getattr(rt, "value", str(rt)) for rt in (ri.reward_basis or [])
+        ],
         "reward_breakdown": _named(ri.reward_breakdown),
         "db_match": (ri.db_check.db_match if ri.db_check else None),
         "nl_failures": nl_failures,
