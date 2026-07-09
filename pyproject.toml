@@ -74,8 +74,13 @@ experiments = [
     "seaborn>=0.13.2",
     "scikit-learn>=1.6.1",
 ]
+harness-opt = [
+    "scikit-learn>=1.6.1",
+    "streamlit>=1.40.0",
+    "plotly>=6.0.0",
+]
 all = [
-    "tau2[voice,knowledge,gym,dev,experiments]",
+    "tau2[voice,knowledge,gym,dev,experiments,harness-opt]",
 ]
 [project.urls]
 Homepage = "https://taubench.com/"
@@ -97,6 +102,11 @@ markers = [
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I"]
 ignore = ["E501", "F541"]
+
+[tool.ruff.lint.per-file-ignores]
+# harness-opt scripts call bootstrap() to configure sys.path before importing
+# tau2/contracts modules, so E402 (imports not at top) is expected there.
+"tools/harness-opt/**" = ["E402"]
 
 [tool.ruff]
 line-length = 88
