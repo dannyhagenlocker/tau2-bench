@@ -202,6 +202,38 @@ def run_summary(run: str) -> dict[str, Any]:
     return summary
 
 
+def _failure_reason(sim) -> Optional[dict[str, Any]]:
+    """Ground-truth ('golden') reason a trace failed, from the evaluator's
+    RewardInfo: reward breakdown, DB match, and — most usefully — the failed
+    NL-assertion / communicate checks with the judge's justification text."""
+    ri = getattr(sim, "reward_info", None)
+    if ri is None:
+        return None
+
+    def _named(d):
+        return {getattr(k, "value", str(k)): v for k, v in (d or {}).items()}
+
+    nl_failures = [
+        {"assertion": c.nl_assertion, "justification": c.justification}
+        for c in (ri.nl_assertions or [])
+        if not c.met
+    ]
+    comm_failures = [
+        {"info": c.info, "justification": c.justification}
+        for c in (ri.communicate_checks or [])
+        if not c.met
+    ]
+    return {
+        "reward": ri.reward,
+        "reward_basis": [getattr(rt, "value", str(rt)) for rt in (ri.reward_basis or [])],
+        "reward_breakdown": _named(ri.reward_breakdown),
+        "db_match": (ri.db_check.db_match if ri.db_check else None),
+        "nl_failures": nl_failures,
+        "communicate_failures": comm_failures,
+        "termination_reason": getattr(sim, "termination_reason", None),
+    }
+
+
 def sim_detail(run: str, sim_id: str) -> Optional[dict[str, Any]]:
     sims = _load_results(run)
     sim = sims.get(sim_id)
@@ -210,7 +242,12 @@ def sim_detail(run: str, sim_id: str) -> Optional[dict[str, Any]]:
     steps, total_dur = _steps_for_sim(sim)
     summary = run_summary(run)
     meta = summary["sims"].get(sim_id, {})
-    return {**meta, "total_dur": total_dur, "steps": steps}
+    return {
+        **meta,
+        "total_dur": total_dur,
+        "steps": steps,
+        "failure_reason": _failure_reason(sim),
+    }
 
 
 def task_rows(run: str) -> list[dict[str, Any]]:
