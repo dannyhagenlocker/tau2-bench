@@ -1,0 +1,625 @@
+{
+  "timestamp": "2026-07-08T17:49:45.110054",
+  "info": {
+    "git_commit": "smoke",
+    "num_trials": 1,
+    "max_steps": 100,
+    "max_errors": 10,
+    "user_info": {
+      "implementation": "user_simulator",
+      "llm": "gpt-5.5",
+      "llm_args": null,
+      "global_simulation_guidelines": null,
+      "voice_settings": null,
+      "persona_config": null
+    },
+    "agent_info": {
+      "implementation": "llm_agent",
+      "llm": "gpt-5.5",
+      "llm_args": null,
+      "voice_settings": null
+    },
+    "environment_info": {
+      "domain_name": "retail",
+      "policy": "smoke",
+      "tool_defs": null
+    },
+    "seed": null,
+    "text_streaming_config": {
+      "chunk_by": "words",
+      "chunk_size": 1
+    },
+    "speech_complexity": null,
+    "audio_native_config": null,
+    "retrieval_config": null,
+    "retrieval_config_kwargs": null
+  },
+  "tasks": [],
+  "simulations": [
+    {
+      "id": "s1",
+      "task_id": "task_0",
+      "timestamp": "2026-07-08T17:49:45.103955",
+      "start_time": "2026-07-08T17:49:45.102418",
+      "end_time": "2026-07-08T17:49:45.103257",
+      "duration": 10.0,
+      "termination_reason": "user_stop",
+      "agent_cost": 0.01,
+      "user_cost": 0.005,
+      "reward_info": {
+        "reward": 1.0,
+        "db_check": {
+          "db_match": true,
+          "db_reward": 1.0
+        },
+        "env_assertions": null,
+        "action_checks": null,
+        "nl_assertions": null,
+        "communicate_checks": null,
+        "reward_basis": [
+          "DB",
+          "NL_ASSERTION"
+        ],
+        "reward_breakdown": {
+          "DB": 1.0,
+          "NL_ASSERTION": 1.0
+        },
+        "info": null
+      },
+      "messages": [
+        {
+          "role": "assistant",
+          "content": "Hi! How can I help?",
+          "tool_calls": null,
+          "is_audio": false,
+          "turn_idx": null,
+          "timestamp": "2026-07-08T17:49:45.095717",
+          "cost": null,
+          "usage": null,
+          "raw_data": null,
+          "generation_time_seconds": null,
+          "audio_format": null,
+          "audio_path": null,
+          "audio_script_gold": null,
+          "speech_effects": null,
+          "source_effects": null,
+          "channel_effects": null,
+          "turn_taking_action": null,
+          "utterance_ids": null,
+          "chunk_id": null,
+          "is_final_chunk": true,
+          "source": null,
+          "contains_speech": true
+        },
+        {
+          "role": "user",
+          "content": "I need help with order 123",
+          "tool_calls": null,
+          "is_audio": false,
+          "turn_idx": null,
+          "timestamp": "2026-07-08T17:49:45.096800",
+          "cost": null,
+          "usage": null,
+          "raw_data": null,
+          "generation_time_seconds": null,
+          "audio_format": null,
+          "audio_path": null,
+          "audio_script_gold": null,
+          "speech_effects": null,
+          "source_effects": null,
+          "channel_effects": null,
+          "turn_taking_action": null,
+          "utterance_ids": null,
+          "chunk_id": null,
+          "is_final_chunk": true,
+          "source": null,
+          "contains_speech": true
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "t1",
+              "name": "find_user_id_by_email",
+              "arguments": {
+                "email": "a@b.com"
+              },
+              "requestor": "assistant"
+            }
+          ],
+          "is_audio": false,
+          "turn_idx": null,
+          "timestamp": "2026-07-08T17:49:45.097839",
+          "cost": null,
+          "usage": null,
+          "raw_data": null,
+          "generation_time_seconds": null,
+          "audio_format": null,
+          "audio_path": null,
+          "audio_script_gold": null,
+          "speech_effects": null,
+          "source_effects": null,
+          "channel_effects": null,
+          "turn_taking_action": null,
+          "utterance_ids": null,
+          "chunk_id": null,
+          "is_final_chunk": true,
+          "source": null,
+          "contains_speech": true
+        },
+        {
+          "id": "t1",
+          "role": "tool",
+          "content": "user_1",
+          "requestor": "assistant",
+          "error": false,
+          "turn_idx": null,
+          "timestamp": "2026-07-08T17:49:45.098537"
+        }
+      ],
+      "ticks": null,
+      "trial": 0,
+      "seed": null,
+      "mode": "half_duplex",
+      "speech_environment": null,
+      "review": null,
+      "user_only_review": null,
+      "info": null,
+      "auth_classification": null,
+      "hallucination_retries_used": 0,
+      "hallucination_check": null,
+      "provider_session_id": null,
+      "policy": null,
+      "effect_timeline": null
+    },
+    {
+      "id": "s2",
+      "task_id": "task_1",
+      "timestamp": "2026-07-08T17:49:45.105911",
+      "start_time": "2026-07-08T17:49:45.104732",
+      "end_time": "2026-07-08T17:49:45.105302",
+      "duration": 10.0,
+      "termination_reason": "user_stop",
+      "agent_cost": 0.01,
+      "user_cost": 0.005,
+      "reward_info": {
+        "reward": 0.0,
+        "db_check": {
+          "db_match": false,
+          "db_reward": 0.0
+        },
+        "env_assertions": null,
+        "action_checks": null,
+        "nl_assertions": null,
+        "communicate_checks": null,
+        "reward_basis": [
+          "DB",
+          "NL_ASSERTION"
+        ],
+        "reward_breakdown": {
+          "DB": 0.0,
+          "NL_ASSERTION": 1.0
+        },
+        "info": null
+      },
+      "messages": [
+        {
+          "role": "assistant",
+          "content": "Hi!",
+          "tool_calls": null,
+          "is_audio": false,
+          "turn_idx": null,
+          "timestamp": "2026-07-08T17:49:45.099183",
+          "cost": null,
+          "usage": null,
+          "raw_data": null,
+          "generation_time_seconds": null,
+          "audio_format": null,
+          "audio_path": null,
+          "audio_script_gold": null,
+          "speech_effects": null,
+          "source_effects": null,
+          "channel_effects": null,
+          "turn_taking_action": null,
+          "utterance_ids": null,
+          "chunk_id": null,
+          "is_final_chunk": true,
+          "source": null,
+          "contains_speech": true
+        },
+        {
+          "role": "user",
+          "content": "Cancel order W123",
+          "tool_calls": null,
+          "is_audio": false,
+          "turn_idx": null,
+          "timestamp": "2026-07-08T17:49:45.099804",
+          "cost": null,
+          "usage": null,
+          "raw_data": null,
+          "generation_time_seconds": null,
+          "audio_format": null,
+          "audio_path": null,
+          "audio_script_gold": null,
+          "speech_effects": null,
+          "source_effects": null,
+          "channel_effects": null,
+          "turn_taking_action": null,
+          "utterance_ids": null,
+          "chunk_id": null,
+          "is_final_chunk": true,
+          "source": null,
+          "contains_speech": true
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "t2",
+              "name": "cancel_pending_order",
+              "arguments": {
+                "order_id": "W1"
+              },
+              "requestor": "assistant"
+            }
+          ],
+          "is_audio": false,
+          "turn_idx": null,
+          "timestamp": "2026-07-08T17:49:45.100456",
+          "cost": null,
+          "usage": null,
+          "raw_data": null,
+          "generation_time_seconds": null,
+          "audio_format": null,
+          "audio_path": null,
+          "audio_script_gold": null,
+          "speech_effects": null,
+          "source_effects": null,
+          "channel_effects": null,
+          "turn_taking_action": null,
+          "utterance_ids": null,
+          "chunk_id": null,
+          "is_final_chunk": true,
+          "source": null,
+          "contains_speech": true
+        },
+        {
+          "id": "t2",
+          "role": "tool",
+          "content": "ok",
+          "requestor": "assistant",
+          "error": false,
+          "turn_idx": null,
+          "timestamp": "2026-07-08T17:49:45.101101"
+        }
+      ],
+      "ticks": null,
+      "trial": 0,
+      "seed": null,
+      "mode": "half_duplex",
+      "speech_environment": null,
+      "review": null,
+      "user_only_review": null,
+      "info": null,
+      "auth_classification": null,
+      "hallucination_retries_used": 0,
+      "hallucination_check": null,
+      "provider_session_id": null,
+      "policy": null,
+      "effect_timeline": null
+    },
+    {
+      "id": "s3",
+      "task_id": "task_2",
+      "timestamp": "2026-07-08T17:49:45.107658",
+      "start_time": "2026-07-08T17:49:45.106505",
+      "end_time": "2026-07-08T17:49:45.107091",
+      "duration": 10.0,
+      "termination_reason": "user_stop",
+      "agent_cost": 0.01,
+      "user_cost": 0.005,
+      "reward_info": {
+        "reward": 0.0,
+        "db_check": {
+          "db_match": true,
+          "db_reward": 1.0
+        },
+        "env_assertions": null,
+        "action_checks": null,
+        "nl_assertions": [
+          {
+            "nl_assertion": "Agent apologized for the delay",
+            "met": false,
+            "justification": "No apology given"
+          }
+        ],
+        "communicate_checks": null,
+        "reward_basis": [
+          "DB",
+          "NL_ASSERTION"
+        ],
+        "reward_breakdown": {
+          "DB": 1.0,
+          "NL_ASSERTION": 0.0
+        },
+        "info": null
+      },
+      "messages": [
+        {
+          "role": "assistant",
+          "content": "Hi! How can I help?",
+          "tool_calls": null,
+          "is_audio": false,
+          "turn_idx": null,
+          "timestamp": "2026-07-08T17:49:45.095717",
+          "cost": null,
+          "usage": null,
+          "raw_data": null,
+          "generation_time_seconds": null,
+          "audio_format": null,
+          "audio_path": null,
+          "audio_script_gold": null,
+          "speech_effects": null,
+          "source_effects": null,
+          "channel_effects": null,
+          "turn_taking_action": null,
+          "utterance_ids": null,
+          "chunk_id": null,
+          "is_final_chunk": true,
+          "source": null,
+          "contains_speech": true
+        },
+        {
+          "role": "user",
+          "content": "I need help with order 123",
+          "tool_calls": null,
+          "is_audio": false,
+          "turn_idx": null,
+          "timestamp": "2026-07-08T17:49:45.096800",
+          "cost": null,
+          "usage": null,
+          "raw_data": null,
+          "generation_time_seconds": null,
+          "audio_format": null,
+          "audio_path": null,
+          "audio_script_gold": null,
+          "speech_effects": null,
+          "source_effects": null,
+          "channel_effects": null,
+          "turn_taking_action": null,
+          "utterance_ids": null,
+          "chunk_id": null,
+          "is_final_chunk": true,
+          "source": null,
+          "contains_speech": true
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "t1",
+              "name": "find_user_id_by_email",
+              "arguments": {
+                "email": "a@b.com"
+              },
+              "requestor": "assistant"
+            }
+          ],
+          "is_audio": false,
+          "turn_idx": null,
+          "timestamp": "2026-07-08T17:49:45.097839",
+          "cost": null,
+          "usage": null,
+          "raw_data": null,
+          "generation_time_seconds": null,
+          "audio_format": null,
+          "audio_path": null,
+          "audio_script_gold": null,
+          "speech_effects": null,
+          "source_effects": null,
+          "channel_effects": null,
+          "turn_taking_action": null,
+          "utterance_ids": null,
+          "chunk_id": null,
+          "is_final_chunk": true,
+          "source": null,
+          "contains_speech": true
+        },
+        {
+          "id": "t1",
+          "role": "tool",
+          "content": "user_1",
+          "requestor": "assistant",
+          "error": false,
+          "turn_idx": null,
+          "timestamp": "2026-07-08T17:49:45.098537"
+        },
+        {
+          "role": "assistant",
+          "content": "Done.",
+          "tool_calls": null,
+          "is_audio": false,
+          "turn_idx": null,
+          "timestamp": "2026-07-08T17:49:45.101751",
+          "cost": null,
+          "usage": null,
+          "raw_data": null,
+          "generation_time_seconds": null,
+          "audio_format": null,
+          "audio_path": null,
+          "audio_script_gold": null,
+          "speech_effects": null,
+          "source_effects": null,
+          "channel_effects": null,
+          "turn_taking_action": null,
+          "utterance_ids": null,
+          "chunk_id": null,
+          "is_final_chunk": true,
+          "source": null,
+          "contains_speech": true
+        }
+      ],
+      "ticks": null,
+      "trial": 0,
+      "seed": null,
+      "mode": "half_duplex",
+      "speech_environment": null,
+      "review": null,
+      "user_only_review": null,
+      "info": null,
+      "auth_classification": null,
+      "hallucination_retries_used": 0,
+      "hallucination_check": null,
+      "provider_session_id": null,
+      "policy": null,
+      "effect_timeline": null
+    },
+    {
+      "id": "s4",
+      "task_id": "task_3",
+      "timestamp": "2026-07-08T17:49:45.109431",
+      "start_time": "2026-07-08T17:49:45.108224",
+      "end_time": "2026-07-08T17:49:45.108813",
+      "duration": 10.0,
+      "termination_reason": "user_stop",
+      "agent_cost": 0.01,
+      "user_cost": 0.005,
+      "reward_info": {
+        "reward": 0.0,
+        "db_check": {
+          "db_match": false,
+          "db_reward": 0.0
+        },
+        "env_assertions": null,
+        "action_checks": null,
+        "nl_assertions": [
+          {
+            "nl_assertion": "Agent apologized for the delay",
+            "met": false,
+            "justification": "No apology given"
+          }
+        ],
+        "communicate_checks": null,
+        "reward_basis": [
+          "DB",
+          "NL_ASSERTION"
+        ],
+        "reward_breakdown": {
+          "DB": 0.0,
+          "NL_ASSERTION": 0.0
+        },
+        "info": null
+      },
+      "messages": [
+        {
+          "role": "assistant",
+          "content": "Hi!",
+          "tool_calls": null,
+          "is_audio": false,
+          "turn_idx": null,
+          "timestamp": "2026-07-08T17:49:45.099183",
+          "cost": null,
+          "usage": null,
+          "raw_data": null,
+          "generation_time_seconds": null,
+          "audio_format": null,
+          "audio_path": null,
+          "audio_script_gold": null,
+          "speech_effects": null,
+          "source_effects": null,
+          "channel_effects": null,
+          "turn_taking_action": null,
+          "utterance_ids": null,
+          "chunk_id": null,
+          "is_final_chunk": true,
+          "source": null,
+          "contains_speech": true
+        },
+        {
+          "role": "user",
+          "content": "Cancel order W123",
+          "tool_calls": null,
+          "is_audio": false,
+          "turn_idx": null,
+          "timestamp": "2026-07-08T17:49:45.099804",
+          "cost": null,
+          "usage": null,
+          "raw_data": null,
+          "generation_time_seconds": null,
+          "audio_format": null,
+          "audio_path": null,
+          "audio_script_gold": null,
+          "speech_effects": null,
+          "source_effects": null,
+          "channel_effects": null,
+          "turn_taking_action": null,
+          "utterance_ids": null,
+          "chunk_id": null,
+          "is_final_chunk": true,
+          "source": null,
+          "contains_speech": true
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "t2",
+              "name": "cancel_pending_order",
+              "arguments": {
+                "order_id": "W1"
+              },
+              "requestor": "assistant"
+            }
+          ],
+          "is_audio": false,
+          "turn_idx": null,
+          "timestamp": "2026-07-08T17:49:45.100456",
+          "cost": null,
+          "usage": null,
+          "raw_data": null,
+          "generation_time_seconds": null,
+          "audio_format": null,
+          "audio_path": null,
+          "audio_script_gold": null,
+          "speech_effects": null,
+          "source_effects": null,
+          "channel_effects": null,
+          "turn_taking_action": null,
+          "utterance_ids": null,
+          "chunk_id": null,
+          "is_final_chunk": true,
+          "source": null,
+          "contains_speech": true
+        },
+        {
+          "id": "t2",
+          "role": "tool",
+          "content": "ok",
+          "requestor": "assistant",
+          "error": false,
+          "turn_idx": null,
+          "timestamp": "2026-07-08T17:49:45.101101"
+        }
+      ],
+      "ticks": null,
+      "trial": 0,
+      "seed": null,
+      "mode": "half_duplex",
+      "speech_environment": null,
+      "review": null,
+      "user_only_review": null,
+      "info": null,
+      "auth_classification": null,
+      "hallucination_retries_used": 0,
+      "hallucination_check": null,
+      "provider_session_id": null,
+      "policy": null,
+      "effect_timeline": null
+    }
+  ],
+  "simulation_index": null
+}
