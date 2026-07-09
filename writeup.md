@@ -1,10 +1,21 @@
 # τ2-bench Retail Harness Optimization
 
-The tuned agent (`retail_llm_agent`) measured on the full `gpt-5.5` benchmark
-(114 tasks × 2 trials, `data/simulations/cand-gpt55-full-t2`) lifts pass²
-from 76.3% to 89.5% over the baseline.
 
----
+My goal for this project was build a coding agent that makes **targeted changes** (i.e. changes that directly address 
+a failure-mode) to the harness that are **generally good** (i.e. improve the failure-mode cases, do not regress 
+non-failure-mode cases, and are not hyper specific to one potentially noisy failing trace).
+The bet I took in this project was that a good layer of abstraction between raw traces and the coding agent, in 
+conjunction with a well designed lift/regression test to judge harness changes, would enable the agent to make 
+targeted yet generally good changes to the harness, and improve overall performance on the full task set. I ended
+up building exactly this with a clustering engine that analyzes and groups traces by failure mode, a coding agent
+which proposes harness changes that target each of these failure modes, and a judging procedure that gates harness 
+change proposals based on performance on a subset of tasks. After running 1.5 generations of the improvement loop on
+the base harness in tau-bench, the tuned agent (`retail_llm_agent`) measured on the  full `gpt-5.5` benchmark 
+(114 tasks × 2 trials, `data/simulations/cand-gpt55-full-t2`) lifts pass² from 76.3% to 89.5% over the baseline.
+
+Everything in this writeup (the baseline and tuned rollouts, the A/B comparison,
+and the full per-generation optimization loop) is runnable from
+[`runbook.md`](runbook.md).
 
 ## 1. Baseline results and main failure modes
 
@@ -21,7 +32,7 @@ Baseline is the stock `llm_agent`, `gpt-5.5` agent and user, 2 trials × 114 tas
 
 The 36 failing sims break down into 31 DB-state mismatches and 5 NL-assertion
 misses. Every sim ended in a `user_stop` command so there was no indication of premature terminations, max-error
-exits, or JSON/tool errors. Using the clustering engine and visualisation software to guide my search, I saw that 
+exits, or JSON/tool errors. Using the clustering engine and visualization dashboard I built to guide my search, I saw that 
 failures fell into five main buckets...
 
 | #      | Mechanism                                | Failing sims | Evidence                                                                                                                                                                                                                                                               |
@@ -73,7 +84,14 @@ One automatic pass (`cli.py analyze`) that reads traces only (no harness code, n
 - **Cluster** (`lib/embedding_cluster.py`, `lib/minilm_numpy.py`): embed each failing
   trace and run agglomerative cosine clustering with an auto-selected distance
   threshold (loosest threshold whose largest cluster stays ≤ 45%, which stopped the
-  weak-model run collapsing into one blob). The embedder is all-MiniLM-L6-v2 via a
+  weak-model run collapsing into one blob). The text-to-embed is an enriched "fingerprint"
+  of the trace. A few of the best performing features in this enriched text were a normalized
+  tool-call chain, the agent's final message, the trace structure with noisy details redacted
+  (product information, names, cities, etc.), and a diff between the desired
+  and realized database state. These features enriched the trace's embedding beyond
+  just dumping the full trace, and in an ablation against all other clustering strategies,
+  proved to achieve the highest clustering performance as measured by silhouette score on a 
+  hand-labeled data set of failures. The embedder is all-MiniLM-L6-v2 via a
   pure-NumPy forward pass (no torch, no network, no budget); an ablation vs
   hand-labeled root causes chose it (ARI 0.70 vs tf-idf 0.47, signature 0.20). The
   primary axis is a deterministic root-cause mechanism (`bailed_transfer`,
@@ -81,7 +99,7 @@ One automatic pass (`cli.py analyze`) that reads traces only (no harness code, n
   were created manually to evaluate clustering behavior.
 - **Label** (`gpt-4.1-mini`): a name, cohesion score, and blame tags from 2–3
   representatives per cluster. Representatives only, so cost is negligible.
-- **Report**: `task_summary.csv`, `analysis_summary.md`, `manifest.json`
+- **Report**: persists `task_summary.csv`, `analysis_summary.md`, `manifest.json`
 
 #### 3. Review & propose — `dashboard_v3/` → `propose.py` → `eval_proposal.py`
 
@@ -92,10 +110,10 @@ One automatic pass (`cli.py analyze`) that reads traces only (no harness code, n
   a self-contained OpenAI coder that emits validated
   `{path, old_string, new_string}` edits; an allowlist permits agent-side files only
   and hard-denies every red-line path.
-- **Subset eval** (`build_subset.py`): gates the proposal on a small subset. A frozen
-  global oracle (stable passes must not regress) plus the cluster's failing tasks
+- **Subset eval** (`build_subset.py`): gates the proposal based on a small subset eval. A
+  frozen global oracle (stable passes must not regress) plus the cluster's failing tasks
   (must net-improve). About 10× cheaper than a full run. This can't be taken as proof
-  that it will lift the whole eval, but it is a very good signal.
+  that it will lift the whole eval, but it is a very good proxy signal.
 
 #### 4. Accept / reject — `scripts/manage_proposal.py`
 
@@ -109,7 +127,8 @@ new tip.
 
 ### Dashboard walkthrough
 
-The dashboard is the human surface for steps 3 and 4. It turns the `reports/<run>/`
+The dashboard is the human surface for steps 3 and 4 and allows for frictionless trace 
+analysis so that the improvement process is transparent. It turns the `reports/<run>/`
 artifacts into a "what failed → propose → review → accept" workflow in the browser.
 
 **Overview** — headline metrics and the root-cause mechanism breakdown
@@ -120,7 +139,9 @@ artifacts into a "what failed → propose → review → accept" workflow in the
 
 **Clusters** — drill into a mode. `c_000` shows its mechanism composition (13
 `bailed_transfer` + 2 `identification_failure`) and every member's tool chain; the
-`… → transfer_to_human_agents` tails make the premature-transfer pattern obvious.
+`… → transfer_to_human_agents` tails make the premature-transfer pattern obvious. This
+is the page that made it super easy to figure out the failure modes, and group failing traces
+for easier analysis.
 
 ![](/docs/assets/dashboard/02-clusters.png)
 *Clusters page: c_000 detail with mechanism composition and per-trace tool chains*
@@ -133,8 +154,9 @@ clusters.
 *Embedding page: centroid map, sim scatter, and cluster-similarity heatmap*
 
 **Traces** — a swimlane timeline of two trajectories side by side (per-turn latency
-and cost) and a message-level diff. I read the C1 evidence here: the agent transfers
-instead of answering.
+and cost) and a message-level diff. This page makes it really easy to compare traces
+once they are clustered and gain an intuition for what is failing while the agent
+implements the change on its own.
 
 | | |
 | --- | --- |
@@ -255,7 +277,7 @@ lift and re-asking an already-authenticated user broke one control task.
 </details>
 
 
-While P6 and P7 seem like obvious harness fixes, the extract step showed no JSON errors 
+While P6 and P7 seem like potentially good harness changes, the extract step showed no JSON errors 
 and no auth failures across 228 sims, and subset eval confirmed neutral or negative results 
 before a full run. Since we can't confidently classify P6 and P7 as strictly better, we reject
 the changes.
@@ -273,8 +295,8 @@ same `gpt-5.5` agent and user, `cand-gpt55-full-t2` vs `baseline-gpt55-t2`).
 | Metric                      | Baseline `llm_agent` | `retail_llm_agent`    | Δ             |
 | --------------------------- | -------------------- | --------------------- | ------------- |
 | pass² (both trials)         | 87 / 114 = 76.3%     | **102 / 114 = 89.5%** | **+15 tasks** |
-| Sim-level pass (avg reward) | 192 / 228 = 84.2%    | **213 / 228 = 93.4%** | +21 sims      |
-| pass@1 (≥1 trial)           | 105 / 114 = 92.1%    | 111 / 114 = 97.4%     | +6 tasks      |
+| Sim-level pass (avg reward) | 192 / 228 = 84.2%    | **213 / 228 = 93.4%** | +23 sims      |
+| pass@1 (≥1 trial)           | 105 / 114 = 92.1%    | 111 / 114 = 97.3%     | +6 tasks      |
 
 
 At the pass² level, 19 tasks flipped from failing to passing and 4 flipped from passing
@@ -317,14 +339,14 @@ the nearest dollar.
 
 ## 5. What did not work
 
-My first clustering approach was a decision tree over trace signatures. I hand-wrote
+My first clustering approach was a decision tree over trace signatures. It was mostly hand-written
 rules that read the DB-diff and the tool chain and sorted each failure into a bucket.
-It was easy to read, but it was brittle. Small differences in a trace sent nearly
-identical failures down different branches, so the baseline came out as about 20
-clusters with more than half of them singletons, and tuning the rules for one run
-broke another. I switched to embeddings with "agglomerative clustering", which groups
-by overall similarity instead of a fixed branch order, and the singleton problem
-mostly went away. Two smaller problems arose from this. First, a single fixed
+It was easy to read, but it was super brittle. Small differences in a trace could send nearly
+identical failures down different branches. The baseline came out as about 20
+clusters with more than half of them singletons which not a particularly useful result to guide the
+coding agent's changes. I quickly switched to the embedding enriched traces approach with "agglomerative clustering",
+which groups by overall similarity instead of a fixed branch order, and the singleton problem
+mostly went away. One small problem arose from this. First, a single fixed
 distance threshold did not work between different runs: on the weak model it dumped about 74%
 of failures into one giant cluster, so I now pick the threshold per run by clustering
 as aggressively as possible without having the largest cluster contain over 45% of traces.
@@ -332,7 +354,7 @@ as aggressively as possible without having the largest cluster contain over 45% 
 The coding agent had two separate problems. The first was git plumbing. My original
 design gave every proposal its own worktree. With several proposals per generation
 that cluttered up the disk and left orphaned worktrees behind whenever a run died
-halfway through. It was lowk hella annoying. I moved to one worktree per lineage, 
+halfway through. It was honestly super annoying to work with. I moved to one worktree per lineage, 
 with each accepted proposal as a single squashed commit, which keeps the disk usage flat.
 The second problem is the coder itself. It only makes one small edit at a time, and
 it is pretty unreliable: some runs returned a clean single-block diff for a few cents, and
