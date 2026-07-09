@@ -317,19 +317,33 @@ export function ProposalsPage() {
     scroll.appendChild(h("div", { class: "prop-head-pills" }, statusPill(m.status), " ", m.eval_verdict ? verdictPill(m.eval_verdict) : null));
 
     if (evaluating) {
-      const refresh = h("button", { class: "btn" }, "Refresh");
-      if (ctx && ctx.refresh) refresh.addEventListener("click", ctx.refresh);
       scroll.appendChild(
-        h("div", { class: "warn-box" }, [
-          "Evaluation is running server-side (tau2 subset run, minutes). It keeps going even if you close this — reopen or ",
-          refresh,
-          " to check. Progress log below.",
-        ]),
+        h(
+          "div",
+          { class: "eval-running" },
+          h("span", { class: "eval-spin" }),
+          h(
+            "div",
+            {},
+            h("div", { class: "eval-running-title" }, "Evaluating…"),
+            h("div", { class: "muted tiny" }, "Running tau2 on the subset server-side (a few minutes). Safe to close — it keeps running, and the log below refreshes automatically."),
+          ),
+        ),
       );
+      if (ctx && ctx.refresh) {
+        setTimeout(() => {
+          if (document.body.contains(box)) ctx.refresh();
+        }, 3000);
+      }
     }
-    if (d.eval_log && d.eval_log.trim()) {
-      scroll.appendChild(h("h4", { class: "prop-h4" }, "Eval log"));
-      scroll.appendChild(h("pre", { class: "cli-out" }, d.eval_log.slice(-4000)));
+    if (evaluating || (d.eval_log && d.eval_log.trim())) {
+      scroll.appendChild(h("h4", { class: "prop-h4" }, evaluating ? "Progress log" : "Eval log"));
+      const logText = (d.eval_log || "").slice(-8000);
+      const logPre = h("pre", { class: "cli-out" }, logText || "Waiting for the first output from tau2…");
+      scroll.appendChild(logPre);
+      requestAnimationFrame(() => {
+        logPre.scrollTop = logPre.scrollHeight;
+      });
     }
 
     // footer actions: run eval on the left, reject / accept on the right
@@ -341,7 +355,11 @@ export function ProposalsPage() {
       const accept = h("button", { class: "btn active" }, "Accept → squash onto lineage");
       const reject = h("button", { class: "btn reject" }, "Reject");
       const grp = [runEval, accept, reject, del];
-      runEval.addEventListener("click", () => runAction(api.evalProposal, d.proposal_id, aout, ctx, grp, false));
+      runEval.addEventListener("click", () => {
+        runEval.disabled = true;
+        runEval.textContent = "Starting…";
+        startEval(d.proposal_id, ctx);
+      });
       accept.addEventListener("click", () => runAction(api.accept, d.proposal_id, aout, ctx, grp, true));
       reject.addEventListener("click", () => runAction(api.reject, d.proposal_id, aout, ctx, grp, true));
       leftG.appendChild(runEval);
@@ -380,6 +398,30 @@ export function ProposalsPage() {
       scroll.appendChild(aout);
     }
     return box;
+  }
+
+  function startEval(pid, ctx) {
+    // FastAPI runs the (blocking) eval CLI in a threadpool, so status polling
+    // keeps working while it runs. Fire it, then flip the modal into the
+    // "evaluating" view (status is written server-side up front) rather than
+    // freezing on a spinner — renderDetail then tails eval.log automatically.
+    let done = false;
+    api
+      .evalProposal(store.run, pid)
+      .catch(() => {})
+      .finally(() => {
+        done = true;
+        if (ctx && ctx.refresh) ctx.refresh();
+      });
+    // Nudge into the evaluating view, retrying while the worktree/subprocess
+    // spins up; renderDetail's own poll takes over once status is "evaluating".
+    let tries = 0;
+    const nudge = () => {
+      if (done) return;
+      if (ctx && ctx.refresh) ctx.refresh();
+      if (++tries < 8) setTimeout(nudge, 900);
+    };
+    setTimeout(nudge, 600);
   }
 
   async function runAction(fn, pid, out, ctx, btns, closeOnDone) {

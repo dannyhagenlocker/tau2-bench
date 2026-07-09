@@ -255,6 +255,12 @@ ins { background: var(--ins); text-decoration: none; border-radius: 2px; }
 .eval-row { align-items: center; }
 .eval-note { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; line-height: 1.3; color: var(--muted); }
 .eval-note svg { flex: none; color: #d97706; }
+
+/* eval-in-progress banner (modal) */
+.eval-running { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--accent-weak); margin: 2px 0 4px; }
+.eval-running-title { font-weight: 650; color: var(--text); font-size: 13px; }
+.eval-spin { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid #c7d0f7; border-top-color: var(--accent); animation: eval-spin .8s linear infinite; }
+@keyframes eval-spin { to { transform: rotate(360deg); } }
 .cli-out { background: #0b1020; color: #d6e2ff; font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 11.5px; padding: 10px; border-radius: 8px; white-space: pre-wrap; word-break: break-word; max-height: 260px; overflow: auto; margin-top: 6px; }
 .prop-row { cursor: pointer; }
 .prop-row:hover { background: var(--bg); }
