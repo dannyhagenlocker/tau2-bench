@@ -53,7 +53,7 @@ function shell() {
   const header = h(
     "header",
     { class: "topbar" },
-    h("div", { class: "brand" }, "harness-opt"),
+    h("div", { class: "brand" }, h("img", { class: "brand-logo", src: "logo.png", alt: "" }), h("span", {}, "harness-opt")),
     h("div", { class: "run-pick" }, h("label", {}, "run"), runSelect),
     h(
       "div",

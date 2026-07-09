@@ -27,7 +27,12 @@ def _run_path(script_path: Path, *args: str, check: bool = True) -> int:
 
 
 def _run_script(script: str, *args: str) -> None:
-    _run_path(SCRIPTS / script, *args)
+    # Don't raise CalledProcessError (which prints a noisy rich traceback and
+    # hides the child's real error). The child already streamed its stderr;
+    # just propagate the exit code cleanly.
+    code = _run_path(SCRIPTS / script, *args, check=False)
+    if code != 0:
+        raise typer.Exit(code)
 
 
 @app.command()
@@ -317,6 +322,28 @@ def reject(
 ) -> None:
     """Discard a proposal's ephemeral branch (lineage untouched)."""
     _run_script("manage_proposal.py", "reject", "--run", run, "--proposal", proposal)
+
+
+@app.command("eval-proposal")
+def eval_proposal(
+    run: str = typer.Option(..., "--run"),
+    proposal: str = typer.Option(..., "--proposal"),
+    baseline: str | None = typer.Option(None, "--baseline"),
+) -> None:
+    """Run (or re-run) the subset eval for an existing proposal (spends OpenAI budget)."""
+    args = ["--run", run, "--proposal", proposal]
+    if baseline:
+        args.extend(["--baseline", baseline])
+    _run_script("eval_proposal.py", *args)
+
+
+@app.command("delete-proposal")
+def delete_proposal(
+    run: str = typer.Option(..., "--run"),
+    proposal: str = typer.Option(..., "--proposal"),
+) -> None:
+    """Fully remove a proposal (ephemeral branch + artifacts)."""
+    _run_script("manage_proposal.py", "delete", "--run", run, "--proposal", proposal)
 
 
 @app.command("list-proposals")

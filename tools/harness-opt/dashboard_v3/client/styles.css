@@ -24,7 +24,8 @@ a { color: inherit; text-decoration: none; }
   display: flex; align-items: center; gap: 20px; padding: 0 20px; height: 54px;
   background: var(--panel); border-bottom: 1px solid var(--border); flex: none;
 }
-.brand { font-weight: 750; letter-spacing: -.01em; font-size: 15px; }
+.brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 750; letter-spacing: -.01em; font-size: 15px; }
+.brand-logo { height: 20px; width: auto; display: block; }
 .run-pick { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
 .run-select, .select {
   font: inherit; font-size: 12.5px; padding: 5px 26px 5px 8px; border: 1px solid var(--border);
@@ -241,16 +242,30 @@ ins { background: var(--ins); text-decoration: none; border-radius: 2px; }
 .form-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
 .form-row label { font-size: 12px; color: var(--muted); min-width: 90px; }
 .warn-box { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 8px 10px; border-radius: 8px; font-size: 12px; margin: 4px 0; }
+
+/* toggle switch (matches selects/inputs) */
+.switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+.switch .switch-input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.switch-track { position: relative; box-sizing: border-box; width: 36px; height: 20px; flex: none; border-radius: 999px; background: #d5d9e2; border: 1px solid var(--border); transition: background .15s ease, border-color .15s ease; }
+.switch-thumb { position: absolute; top: 1px; left: 1px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(16,22,37,.25); transition: transform .15s ease; }
+.switch-input:checked + .switch-track { background: var(--accent); border-color: var(--accent); }
+.switch-input:checked + .switch-track .switch-thumb { transform: translateX(16px); }
+.switch-input:focus-visible + .switch-track { box-shadow: 0 0 0 3px var(--accent-weak); }
+.switch-label { font-size: 12.5px; color: var(--text); }
+.eval-row { align-items: center; }
+.eval-note { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; line-height: 1.3; color: var(--muted); }
+.eval-note svg { flex: none; color: #d97706; }
 .cli-out { background: #0b1020; color: #d6e2ff; font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 11.5px; padding: 10px; border-radius: 8px; white-space: pre-wrap; word-break: break-word; max-height: 260px; overflow: auto; margin-top: 6px; }
 .prop-row { cursor: pointer; }
 .prop-row:hover { background: var(--bg); }
 .prop-row.sel { background: var(--accent-weak); }
 .prop-detail:not(:empty) { margin-top: 10px; }
-.prop-detail-box { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 10px; }
+.prop-detail-box { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .prop-h4 { margin: 12px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
 .diffpre { background: #fbfcfe; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 11.5px; white-space: pre; overflow: auto; max-height: 360px; }
 .pstatus { font-size: 10.5px; padding: 1px 7px; border-radius: 6px; font-weight: 600; border: 1px solid; }
 .pstatus.draft { color: #64748b; border-color: #cbd5e1; background: #f1f5f9; }
+.pstatus.evaluating { color: #92400e; border-color: #fde68a; background: #fffbeb; }
 .pstatus.evaluated { color: #1e40af; border-color: #bfdbfe; background: #eff6ff; }
 .pstatus.accepted { color: #166534; border-color: #bbf7d0; background: #ecfdf3; }
 .pstatus.rejected { color: #991b1b; border-color: #fecaca; background: #fef2f2; }
@@ -297,3 +312,43 @@ ins { background: var(--ins); text-decoration: none; border-radius: 2px; }
 .ms-fill.base { opacity: .45; }
 .ms-num { position: absolute; right: 6px; top: 0; font-size: 10.5px; line-height: 14px; color: #374151; font-variant-numeric: tabular-nums; }
 .ms-delta { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 12.5px; }
+
+/* ---- proposal modal (overview / edit diff) ---- */
+.modal-overlay { position: fixed; inset: 0; background: rgba(16,22,37,.5); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 24px; }
+.modal { background: var(--panel); width: min(1120px, 96vw); height: min(88vh, 920px); border-radius: 14px; border: 1px solid var(--border); box-shadow: 0 24px 70px rgba(16,22,37,.28); display: flex; flex-direction: column; overflow: hidden; }
+.modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+.modal-title { margin: 0; font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 14px; color: var(--text); }
+.modal-close { border: 1px solid transparent; background: transparent; font-size: 14px; cursor: pointer; color: var(--muted); border-radius: 8px; width: 28px; height: 28px; line-height: 1; flex: none; }
+.modal-close:hover { color: var(--text); background: var(--bg); border-color: var(--border); }
+.modal-tabs { display: flex; gap: 2px; padding: 0 14px; border-bottom: 1px solid var(--border); background: var(--bg); }
+.modal-tab { border: none; background: transparent; padding: 10px 14px; cursor: pointer; font: inherit; font-size: 13px; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.modal-tab:hover { color: var(--text); }
+.modal-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.modal-content { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; padding: 0; }
+
+/* overview tab: scrolling body + action footer pinned to the modal bottom */
+.prop-modal-ov { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.prop-scroll { flex: 1; min-height: 0; overflow: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+.prop-footer { flex: none; padding: 12px 18px; background: var(--panel); border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+.prop-actions { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+.prop-actions-l, .prop-actions-r { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.btn.reject:hover { color: #b91c1c; border-color: #fca5a5; }
+
+/* detail header: meta + trash on the right */
+.prop-head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.prop-head-pills { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; flex: none; border: 1px solid var(--border); background: #fff; color: var(--muted); border-radius: 8px; cursor: pointer; }
+.icon-btn:hover { color: var(--text); border-color: var(--accent); }
+.icon-btn.danger:hover { color: #b91c1c; border-color: #fca5a5; background: #fef2f2; }
+
+/* edit-diff tab: scrolling editors + save bar pinned to the modal bottom */
+.prop-editor { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.prop-editor-scroll { flex: 1; min-height: 0; overflow: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+.prop-editor-scroll .monaco-host { flex: 1; min-height: 260px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.prop-editor-foot { flex: none; padding: 12px 18px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+.prop-ed-bar { display: flex; gap: 12px; align-items: center; }
+.prop-ed-bar .prop-ed-note { flex: 1; }
+.editor-file-head { margin: 4px 0 2px; color: var(--muted); }
+.editor-fallback { width: 100%; height: 50vh; min-height: 260px; font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 10px; color: var(--text); resize: none; }
+.btn.danger { color: #b91c1c; border-color: #fca5a5; }
+.btn.danger:hover { background: #fef2f2; }

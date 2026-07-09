@@ -32,6 +32,12 @@ export const api = {
   propose: (run, body) => postJSON(`/api/runs/${enc(run)}/propose`, body),
   accept: (run, pid) => postJSON(`/api/runs/${enc(run)}/proposals/${enc(pid)}/accept`),
   reject: (run, pid) => postJSON(`/api/runs/${enc(run)}/proposals/${enc(pid)}/reject`),
+  // edit / re-eval / delete
+  proposalFiles: (run, pid) => getJSON(`/api/runs/${enc(run)}/proposals/${enc(pid)}/files`),
+  saveProposalFiles: (run, pid, files) =>
+    postJSON(`/api/runs/${enc(run)}/proposals/${enc(pid)}/files`, { files }),
+  evalProposal: (run, pid) => postJSON(`/api/runs/${enc(run)}/proposals/${enc(pid)}/eval`),
+  deleteProposal: (run, pid) => postJSON(`/api/runs/${enc(run)}/proposals/${enc(pid)}/delete`),
 };
 
 const simCache = new Map();

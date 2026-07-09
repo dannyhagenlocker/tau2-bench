@@ -447,7 +447,55 @@ def proposal_detail(run: str, proposal_id: str) -> Optional[dict[str, Any]]:
         "subset_results": _read_json(pdir / "subset_results.json"),
         "proposal_md": _text("proposal.md"),
         "diff": _text("diff.patch"),
+        "eval_log": _text("eval.log"),
     }
+
+
+def proposal_files(run: str, proposal_id: str) -> Optional[dict[str, Any]]:
+    """Editable files (original vs modified) for a draft/evaluated proposal."""
+    from lib import lineage as lin
+
+    meta = _read_json(proposal_dir(run, proposal_id) / "metadata.json")
+    if not meta:
+        return None
+    lineage_id = meta.get("lineage_id") or run
+    worktree, _ = lin.ensure_lineage(lineage_id)
+    return {
+        "proposal_id": proposal_id,
+        "files": lin.proposal_files(worktree, lineage_id, proposal_id),
+    }
+
+
+def apply_proposal_files(
+    run: str, proposal_id: str, files: dict[str, str]
+) -> dict[str, Any]:
+    """Persist human-edited file contents to the proposal branch; refresh artifacts.
+
+    Editing invalidates any prior eval, so status resets to draft.
+    """
+    from lib import lineage as lin
+    from lib.proposals_index import rewrite_all
+
+    pdir = proposal_dir(run, proposal_id)
+    meta = _read_json(pdir / "metadata.json")
+    if not meta:
+        raise ValueError(f"proposal not found: {proposal_id}")
+    lineage_id = meta.get("lineage_id") or run
+    worktree, _ = lin.ensure_lineage(lineage_id)
+    patch, shortstat = lin.apply_proposal_files(
+        worktree, lineage_id, proposal_id, files
+    )
+
+    (pdir / "diff.patch").write_text(patch)
+    meta["diff_stat"] = shortstat or "no changes"
+    meta["status"] = "draft"
+    meta["eval_verdict"] = None
+    (pdir / "metadata.json").write_text(json.dumps(meta, indent=2))
+    (pdir / "proposal_status.json").write_text(
+        json.dumps({"status": "draft"}, indent=2)
+    )
+    rewrite_all(run)
+    return {"ok": True, "diff_stat": meta["diff_stat"]}
 
 
 def summary_markdown(run: str) -> str:

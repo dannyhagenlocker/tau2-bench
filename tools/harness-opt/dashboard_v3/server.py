@@ -13,7 +13,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-from lib.bootstrap import bootstrap
+# Allow running this file directly (python dashboard_v3/server.py): the harness
+# -opt root (parent of this dir) must be on sys.path before importing lib.*.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from lib.bootstrap import bootstrap  # noqa: E402
 
 bootstrap()
 
@@ -35,6 +39,10 @@ class ProposeRequest(BaseModel):
     lineage: str | None = None
     baseline: str | None = None
     do_eval: bool = False
+
+
+class EditRequest(BaseModel):
+    files: dict[str, str]
 
 
 def _run_cli(args: list[str], timeout_s: int) -> dict:
@@ -142,6 +150,35 @@ def create_app() -> FastAPI:
     def api_reject(run: str, proposal_id: str):
         return _run_cli(
             ["reject", "--run", run, "--proposal", proposal_id], timeout_s=120
+        )
+
+    @app.get("/api/runs/{run}/proposals/{proposal_id}/files")
+    def api_proposal_files(run: str, proposal_id: str):
+        files = data.proposal_files(run, proposal_id)
+        if files is None:
+            raise HTTPException(404, f"proposal not found: {proposal_id}")
+        return files
+
+    @app.post("/api/runs/{run}/proposals/{proposal_id}/files")
+    def api_edit_files(run: str, proposal_id: str, req: EditRequest):
+        try:
+            return data.apply_proposal_files(run, proposal_id, req.files)
+        except PermissionError as exc:
+            raise HTTPException(400, str(exc))
+        except ValueError as exc:
+            raise HTTPException(404, str(exc))
+
+    @app.post("/api/runs/{run}/proposals/{proposal_id}/eval")
+    def api_eval_proposal(run: str, proposal_id: str):
+        # Runs tau2 on the subset against the edited branch — minutes, spends budget.
+        return _run_cli(
+            ["eval-proposal", "--run", run, "--proposal", proposal_id], timeout_s=2400
+        )
+
+    @app.post("/api/runs/{run}/proposals/{proposal_id}/delete")
+    def api_delete_proposal(run: str, proposal_id: str):
+        return _run_cli(
+            ["delete-proposal", "--run", run, "--proposal", proposal_id], timeout_s=120
         )
 
     @app.get("/api/runs/{run}/sims/{sim_id}")
