@@ -46,13 +46,107 @@ def extract(
 @app.command()
 def cluster(
     run: str = typer.Option(..., "--run"),
+    method: str = typer.Option(
+        "signature", "--method", help="signature (default) or embedding"
+    ),
+    embedder: str = typer.Option("st", "--embedder", help="st, tfidf, char, or lsa"),
+    scope: str = typer.Option(
+        "global", "--scope", help="l0 or global (embedding only)"
+    ),
+    algo: str = typer.Option(
+        "agglomerative", "--algo", help="agglomerative or hdbscan (embedding only)"
+    ),
+    distance_threshold: float = typer.Option(
+        0.0, "--distance-threshold", help="<=0 auto-selects per run"
+    ),
+    max_cluster_share: float = typer.Option(0.45, "--max-cluster-share"),
+    doc_fields: str = typer.Option(
+        "last_message",
+        "--doc-fields",
+        help="why segments: nl,escalation,last_message,tool_errors",
+    ),
     overwrite: bool = typer.Option(False, "--overwrite"),
 ) -> None:
     """Cluster failures into clusters_l0.json and clusters.json."""
-    args = ["--run", run]
+    args = [
+        "--run",
+        run,
+        "--method",
+        method,
+        "--embedder",
+        embedder,
+        "--scope",
+        scope,
+        "--algo",
+        algo,
+        "--distance-threshold",
+        str(distance_threshold),
+        "--max-cluster-share",
+        str(max_cluster_share),
+        "--doc-fields",
+        doc_fields,
+    ]
     if overwrite:
         args.append("--overwrite")
     _run_script("cluster.py", *args)
+
+
+@app.command("cluster-sweep")
+def cluster_sweep(
+    run: str = typer.Option(..., "--run"),
+    embedders: str = typer.Option("tfidf,char,lsa", "--embedders"),
+    thresholds: str = typer.Option("0.3,0.4,0.5,0.6,0.7,0.8", "--thresholds"),
+    scopes: str = typer.Option("l0,global", "--scopes"),
+    no_hdbscan: bool = typer.Option(False, "--no-hdbscan"),
+    overwrite: bool = typer.Option(False, "--overwrite"),
+) -> None:
+    """Sweep embedder x scope x algo x threshold; recommend best settings
+    (writes clusters_sweep.{json,md})."""
+    args = [
+        "--run",
+        run,
+        "--embedders",
+        embedders,
+        "--thresholds",
+        thresholds,
+        "--scopes",
+        scopes,
+    ]
+    if no_hdbscan:
+        args.append("--no-hdbscan")
+    if overwrite:
+        args.append("--overwrite")
+    _run_script("sweep_clusterings.py", *args)
+
+
+@app.command("cluster-compare")
+def cluster_compare(
+    run: str = typer.Option(..., "--run"),
+    embedder: str = typer.Option("st", "--embedder", help="st, tfidf, char, or lsa"),
+    scope: str = typer.Option("global", "--scope", help="l0 or global"),
+    algo: str = typer.Option("agglomerative", "--algo"),
+    distance_threshold: float = typer.Option(
+        0.0, "--distance-threshold", help="<=0 auto-selects per run"
+    ),
+    overwrite: bool = typer.Option(False, "--overwrite"),
+) -> None:
+    """Compare signature vs embedding clustering on a run (writes
+    clusters_comparison.{json,md}); does not touch clusters.json."""
+    args = [
+        "--run",
+        run,
+        "--embedder",
+        embedder,
+        "--scope",
+        scope,
+        "--algo",
+        algo,
+        "--distance-threshold",
+        str(distance_threshold),
+    ]
+    if overwrite:
+        args.append("--overwrite")
+    _run_script("compare_clusterings.py", *args)
 
 
 @app.command()
@@ -224,13 +318,43 @@ def list_proposals(
 def analyze(
     run: str = typer.Option(..., "--run"),
     baseline: str | None = typer.Option(None, "--baseline"),
+    method: str = typer.Option(
+        "signature", "--method", help="signature (default) or embedding"
+    ),
+    embedder: str = typer.Option("st", "--embedder"),
+    scope: str = typer.Option("global", "--scope"),
+    algo: str = typer.Option("agglomerative", "--algo"),
+    distance_threshold: float = typer.Option(
+        0.0, "--distance-threshold", help="<=0 auto-selects per run"
+    ),
+    max_cluster_share: float = typer.Option(0.45, "--max-cluster-share"),
+    doc_fields: str = typer.Option("last_message", "--doc-fields"),
     mock_label: bool = typer.Option(False, "--mock-label"),
     overwrite: bool = typer.Option(False, "--overwrite"),
 ) -> None:
     """Full pipeline: extract → cluster → label → report → viewer."""
     ow = ["--overwrite"] if overwrite else []
     _run_script("extract_features.py", "--run", run, *ow)
-    _run_script("cluster.py", "--run", run, *ow)
+    _run_script(
+        "cluster.py",
+        "--run",
+        run,
+        "--method",
+        method,
+        "--embedder",
+        embedder,
+        "--scope",
+        scope,
+        "--algo",
+        algo,
+        "--distance-threshold",
+        str(distance_threshold),
+        "--max-cluster-share",
+        str(max_cluster_share),
+        "--doc-fields",
+        doc_fields,
+        *ow,
+    )
     label_args = ["--run", run, *ow]
     if mock_label:
         label_args.append("--mock")

@@ -15,6 +15,11 @@ from contracts.models import (
     ToolCallRecord,
 )
 from lib.db_diff import diff_dbs
+from lib.embedding_cluster import (
+    build_cluster_document,
+    cluster_embeddings,
+    get_embedder,
+)
 from lib.trace_parser import (
     build_nl_signature,
     classify_failure,
@@ -219,7 +224,6 @@ def test_analyze_pipeline(smoke_simulation, tmp_path, monkeypatch):
     assert len(clusters["clusters"]) >= 1
 
 
-
 def test_classify_mechanism_rules():
     # escalation dominates "did nothing" on a DB failure
     assert (
@@ -287,6 +291,137 @@ def test_classify_mechanism_rules():
         )
         == "comm_miss"
     )
+
+
+def test_build_cluster_document_contains_signals():
+    sim = SimulationFeatures(
+        simulation_id="x",
+        task_id="t",
+        trial=0,
+        reward=0.0,
+        failure_type=FailureType.DB_ONLY,
+        termination_reason="user_stop",
+        normalized_tool_chain=["get_order_details", "transfer_to_human_agents"],
+        write_tool_sequence=[],
+        db_diff_signature="missed:orders.*.exchange_items;missed:orders.*.status",
+        db_diff_entities=["orders"],
+        policy_flags=PolicyFlags(single_tool_per_turn=True, num_env_errors=0),
+        num_steps=4,
+        embedding_text="",
+    )
+    doc = build_cluster_document(sim)
+    assert "failure db_only" in doc
+    assert "transfer_to_human_agents" in doc
+    assert "writes none" in doc
+    # signature flattened to readable tokens
+    assert "missed" in doc and "exchange_items" in doc and "status" in doc
+
+
+def test_get_embedder_selection():
+    assert get_embedder("tfidf").name == "tfidf"
+    assert get_embedder("char").name == "char"
+    assert get_embedder("lsa").name.startswith("lsa")
+    assert get_embedder("st").name.startswith("st:")
+    with pytest.raises(ValueError):
+        get_embedder("nope")
+
+
+def test_st_embedder_offline_minilm():
+    """The neural 'st' embedder runs via the offline NumPy MiniLM backend when
+    the model is cached. Skips cleanly if neither backend is available."""
+    from lib.embedding_cluster import st_available
+
+    if not st_available():
+        pytest.skip("no neural st backend available (no torch, no cached MiniLM)")
+
+    import numpy as np
+
+    emb = get_embedder("st")
+    vecs = np.asarray(
+        emb.embed(
+            [
+                "agent transferred the customer to a human agent",
+                "agent escalated the case to a human representative",
+                "the weather today is sunny and warm",
+            ]
+        ),
+        dtype=float,
+    )
+    assert vecs.shape == (3, 384)
+    assert not np.isnan(vecs).any()
+
+    def cos(a, b):
+        return float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b)))
+
+    # paraphrases (0,1) should be closer than unrelated (0,2)
+    assert cos(vecs[0], vecs[1]) > cos(vecs[0], vecs[2])
+
+
+def test_embedding_cluster_engine_end_to_end(smoke_simulation, tmp_path, monkeypatch):
+    reports_dir = tmp_path / "reports"
+    monkeypatch.setattr("lib.paths.REPORTS_DIR", reports_dir)
+    monkeypatch.setenv("HARNESS_OPT_REPORTS_DIR", str(reports_dir))
+
+    from scripts.cluster import run_cluster
+    from scripts.extract_features import run_extract
+
+    run_extract(smoke_simulation, overwrite=True)
+    run_cluster(smoke_simulation, method="embedding", overwrite=True)
+
+    clusters = json.loads(
+        (reports_dir / smoke_simulation / "clusters.json").read_text()
+    )
+    assert clusters["method"] == "embedding"
+    assert clusters["layer"] == "final"
+    assert len(clusters["clusters"]) >= 1
+    # dashboard-required fields present
+    c0 = clusters["clusters"][0]
+    for field in ("id", "name", "failure_type", "signature", "count", "failure_rate"):
+        assert field in c0
+
+
+def test_cluster_compare_writes_artifacts(smoke_simulation, tmp_path, monkeypatch):
+    reports_dir = tmp_path / "reports"
+    monkeypatch.setattr("lib.paths.REPORTS_DIR", reports_dir)
+    monkeypatch.setenv("HARNESS_OPT_REPORTS_DIR", str(reports_dir))
+
+    from scripts.compare_clusterings import run_compare
+    from scripts.extract_features import run_extract
+
+    run_extract(smoke_simulation, overwrite=True)
+    summary = run_compare(smoke_simulation, overwrite=True)
+
+    assert (reports_dir / smoke_simulation / "clusters_comparison.json").exists()
+    assert (reports_dir / smoke_simulation / "clusters_comparison.md").exists()
+    assert "agreement" in summary
+    assert summary["signature"]["n_clusters"] >= 1
+    assert summary["embedding"]["n_clusters"] >= 1
+
+
+def test_embedding_global_scope_single_bucket():
+    sims = [
+        SimulationFeatures(
+            simulation_id=f"s{i}",
+            task_id=f"t{i}",
+            trial=0,
+            reward=0.0,
+            failure_type=FailureType.DB_ONLY,
+            termination_reason="user_stop",
+            normalized_tool_chain=["get_order_details", "cancel_pending_order"],
+            write_tool_sequence=["cancel_pending_order"],
+            db_diff_signature="wrong:orders.*.cancel_reason",
+            policy_flags=PolicyFlags(single_tool_per_turn=True, num_env_errors=0),
+            num_steps=3,
+            embedding_text="",
+        )
+        for i in range(3)
+    ]
+    art = cluster_embeddings(sims, "r", embedder=get_embedder("tfidf"), scope="global")
+    # identical docs -> should collapse to a single cluster
+    assert art.method == "embedding"
+    assert len(art.clusters) == 1
+    assert art.clusters[0].count == 3
+
 
 def test_oracle_build(smoke_simulation, tmp_path, monkeypatch):
     reports_dir = tmp_path / "reports"

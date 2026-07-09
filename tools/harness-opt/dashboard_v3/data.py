@@ -130,6 +130,7 @@ def run_summary(run: str) -> dict[str, Any]:
             "task_id": f.task_id,
             "trial": f.trial,
             "reward": f.reward,
+            "mechanism": getattr(f, "mechanism_class", "unknown"),
             "failure_type": f.failure_type.value,
             "termination_reason": f.termination_reason,
             "db_diff_signature": f.db_diff_signature,
@@ -151,6 +152,8 @@ def run_summary(run: str) -> dict[str, Any]:
             {
                 "id": c.id,
                 "name": c.name,
+                "mechanism": c.mechanism or "other",
+                "method": getattr(c, "method", None),
                 "failure_type": c.failure_type,
                 "signature": c.signature or "",
                 "gloss": gloss_cluster_signature(c.signature or c.name),
