@@ -68,6 +68,16 @@ reports/<run>/proposals/{index.json, README.md}   # per-run proposal table
 reports/lineages/{index.json, README.md, <id>.json}  # repo-level lineage catalog
 ```
 
+## Proposal context: diverse sampled traces (cost-balanced)
+
+The proposer sees real trajectories, not just per-sim metadata ([tools/harness-opt/lib/trace_render.py](../../../tools/harness-opt/lib/trace_render.py), [tools/harness-opt/lib/sampling.py](../../../tools/harness-opt/lib/sampling.py)):
+
+- **Diversity sampling** picks up to `--num-traces` (default 12) sims from the cluster, maximizing coverage of distinct tasks → tool chains → flag patterns (not N trials of one task).
+- **Total char budget** `--trace-char-budget` (default 80,000 ≈ 20k tokens) is split across the sampled traces; per-trace cap is adaptive (`clamp(budget/n, 3000, 12000)`) so small clusters get rich full traces and large clusters get more traces each slightly trimmed.
+- **Targeted truncation**: tool-call *arguments* kept in full (the DB-failure signal), tool *results* truncated (~500 chars), failed NL assertions + judge justifications surfaced, transcript middle-elided.
+
+Rationale: a proposal call costs ~$0.06-0.12 vs ~$1 for the eval it gates (~17x). Since the eval is the expensive step, we spend ~10% of it enriching the proposal to raise eval ROI. The budget flags keep it bounded.
+
 ## Eval: subset gate per proposal, full re-baseline per generation
 
 Each proposal is gated by a **subset** run (target + control tasks) compared against the generation baseline run via [eval_subset.py](../../../tools/harness-opt/scripts/eval_subset.py). We do NOT re-run a full baseline per proposal — only at generation boundaries (Phase 3 loop). `--eval` is opt-in (spends OpenAI budget ~$1-3/proposal); without it, `propose` stops at `draft` (branch + diff + evidence) for free.

@@ -179,6 +179,115 @@ def test_openai_coder_applies_monkeypatched_edits(tmp_path, monkeypatch):
     )
 
 
+def _feat(sim_id, task_id, chain, *, single_tool=True):
+    from contracts.models import FailureType, PolicyFlags, SimulationFeatures
+
+    return SimulationFeatures(
+        simulation_id=sim_id,
+        task_id=task_id,
+        trial=0,
+        reward=0.0,
+        failure_type=FailureType.DB_ONLY,
+        normalized_tool_chain=chain,
+        write_tool_sequence=chain,
+        policy_flags=PolicyFlags(single_tool_per_turn=single_tool, num_env_errors=0),
+        num_steps=len(chain),
+        embedding_text="x",
+    )
+
+
+def test_select_diverse_prefers_distinct_tasks_then_chains():
+    from lib.sampling import select_diverse
+
+    feats = [
+        _feat("a1", "task1", ["cancel_pending_order"]),
+        _feat("a2", "task1", ["cancel_pending_order"]),  # dup task+chain
+        _feat("b1", "task2", ["modify_pending_order_items"]),
+        _feat("c1", "task3", ["cancel_pending_order"]),
+    ]
+    # n=3 should pick 3 distinct tasks (task1, task2, task3), not two task1 trials.
+    picked = select_diverse(feats, 3)
+    assert [p.task_id for p in picked] == ["task1", "task2", "task3"]
+
+    # n=2 → first two distinct tasks.
+    assert {p.task_id for p in select_diverse(feats, 2)} == {"task1", "task2"}
+
+    # n larger than distinct tasks falls back to filling remaining sims.
+    assert len(select_diverse(feats, 10)) == 4
+
+
+def test_render_trace_keeps_args_truncates_results_and_nl():
+    from lib.trace_render import render_trace
+
+    from tau2.data_model.message import (
+        AssistantMessage,
+        ToolCall,
+        ToolMessage,
+        UserMessage,
+    )
+    from tau2.data_model.simulation import (
+        DBCheck,
+        NLAssertionCheck,
+        RewardInfo,
+        SimulationRun,
+    )
+    from tau2.data_model.tasks import RewardType
+    from tau2.utils.utils import get_now
+
+    big_result = "X" * 5000  # long tool output that must be truncated
+    messages = [
+        UserMessage(role="user", content="cancel my order"),
+        AssistantMessage(
+            role="assistant",
+            tool_calls=[
+                ToolCall(
+                    id="t1",
+                    name="cancel_pending_order",
+                    arguments={"order_id": "#W123", "reason": "no longer needed"},
+                )
+            ],
+        ),
+        ToolMessage(role="tool", id="t1", content=big_result, requestor="assistant"),
+    ]
+    sim = SimulationRun(
+        id="s1",
+        task_id="42",
+        trial=0,
+        start_time=get_now(),
+        end_time=get_now(),
+        duration=1.0,
+        termination_reason="user_stop",
+        agent_cost=0.01,
+        user_cost=0.0,
+        reward_info=RewardInfo(
+            reward=0.0,
+            reward_basis=[RewardType.DB, RewardType.NL_ASSERTION],
+            reward_breakdown={RewardType.DB: 0.0, RewardType.NL_ASSERTION: 0.0},
+            db_check=DBCheck(db_match=False, db_reward=0.0),
+            nl_assertions=[
+                NLAssertionCheck(
+                    nl_assertion="Agent should state the refund amount",
+                    met=False,
+                    justification="never mentioned the amount",
+                )
+            ],
+        ),
+        messages=messages,
+        mode="half_duplex",
+    )
+
+    out = render_trace(sim, max_tool_result_chars=100, max_chars=5000)
+    # Tool-call args kept in full (critical for DB diagnosis).
+    assert '"order_id": "#W123"' in out
+    assert "no longer needed" in out
+    # Long tool result truncated.
+    assert big_result not in out and "chars)" in out
+    # Failed NL assertion surfaced with justification.
+    assert "refund amount" in out and "never mentioned" in out
+    # Task header present.
+    assert "task=42" in out
+
+
 def test_openai_coder_rejects_forbidden_path(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
 
